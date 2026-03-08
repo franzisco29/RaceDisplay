@@ -1,40 +1,22 @@
 #ifndef ANIMATION_ENGINE_H
 #define ANIMATION_ENGINE_H
 
-//
-// ============================================================
-//  AnimationEngine.h
-//  Motore animazioni non bloccanti per RaceDisplay
-//  Strutturato per repository Git (chiaro, modulare, stabile)
-// ============================================================
-//
-//  Questo file gestisce:
-//   - Lampeggi (Yellow, Red, Blue, Wet)
-//   - Sequenze SC (S↔C) e VSC (V→S→C)
-//   - Sequenze semaforo (1→5, lights out)
-//   - Checkered (dispari ↔ pari)
-//   - Aggiornamento non bloccante via millis()
-//   - Nessun delay() in tutto il sistema
-//
-//  Non interpreta bandiere: esegue solo animazioni richieste
-//  da FlagManager.
-//
-// ============================================================
-//
-
 #include <FastLED.h>
 #include "FlagSettings.h"
 #include "FlagTypes.h"
-#include "colors.h"
-#include "MatrixDriver.h"
-#include "RingDriver.h"
+#include "Colors.h"
 
+// Driver functions (dichiarate altrove)
+static void MatrixShowFlag(FlagType flag, bool toggle);
+static void drawLetter(char letter, CRGB color);
+static void SemaforoShowFlag(FlagType flag);
+static void SemaforoShowLightsOut();
+static void SemaforoShowFormationLap();
 
 
 // ------------------------------------------------------------
 //  Stato interno animazioni
 // ------------------------------------------------------------
-
 namespace AnimationEngine {
 
     static unsigned long lastUpdate = 0;
@@ -43,16 +25,14 @@ namespace AnimationEngine {
     static FlagType activeFlag = FLAG_NONE;
     static SemaforoState activeSemState = SEM_NONE;
 
-    static uint8_t scStep = 0;     // S ↔ C
-    static uint8_t vscStep = 0;    // V → S → C
+    static uint8_t scStep = 0;
+    static uint8_t vscStep = 0;
 }
-
 
 
 // ------------------------------------------------------------
 //  Avvia animazione bandiera
 // ------------------------------------------------------------
-
 static void AnimationStart(FlagType flag) {
     AnimationEngine::activeFlag = flag;
     AnimationEngine::scStep = 0;
@@ -60,26 +40,52 @@ static void AnimationStart(FlagType flag) {
 }
 
 
-
 // ------------------------------------------------------------
 //  Avvia animazione semaforo
 // ------------------------------------------------------------
-
 static void AnimationStartSem(SemaforoState state) {
     AnimationEngine::activeSemState = state;
 }
 
 
+// ------------------------------------------------------------
+//  Funzione di supporto: mostra gialla SOLO se settore corretto
+// ------------------------------------------------------------
+static bool MatrixShouldShowYellow(FlagType flag) {
+
+    switch(flag) {
+
+        case FLAG_YELLOW_S1:
+            return (DEVICE_ID == 0);
+
+        case FLAG_YELLOW_S2:
+            return (DEVICE_ID == 1);
+
+        case FLAG_YELLOW_S3:
+            return (DEVICE_ID == 2);
+
+        case FLAG_YELLOW_FS:   // S1 + S2
+            return (DEVICE_ID == 0 || DEVICE_ID == 1);
+
+        case FLAG_YELLOW_ST:   // S2 + S3
+            return (DEVICE_ID == 1 || DEVICE_ID == 2);
+
+        case FLAG_YELLOW_TF:   // S3 + S1
+            return (DEVICE_ID == 2 || DEVICE_ID == 0);
+
+        default:
+            return false;
+    }
+}
+
 
 // ------------------------------------------------------------
 //  Aggiornamento animazioni (non bloccante)
 // ------------------------------------------------------------
-
 static void AnimationUpdate() {
 
     unsigned long now = millis();
 
-    // Nessuna animazione attiva
     if (AnimationEngine::activeFlag == FLAG_NONE &&
         AnimationEngine::activeSemState == SEM_NONE)
         return;
@@ -88,12 +94,11 @@ static void AnimationUpdate() {
     // --------------------------------------------------------
     //  Animazioni bandiere
     // --------------------------------------------------------
-
     switch(AnimationEngine::activeFlag) {
 
 
         // ----------------------------------------------------
-        //  Yellow (300 ms)
+        //  Yellow (300 ms) — con logica settore corretta
         // ----------------------------------------------------
         case FLAG_YELLOW_S1:
         case FLAG_YELLOW_S2:
@@ -103,13 +108,21 @@ static void AnimationUpdate() {
         case FLAG_YELLOW_TF:
 
             if (now - AnimationEngine::lastUpdate >= BLINK_YELLOW_MS) {
+
                 AnimationEngine::lastUpdate = now;
                 AnimationEngine::toggle = !AnimationEngine::toggle;
 
-                if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
+                if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
                     SemaforoShowFlag(AnimationEngine::toggle ? AnimationEngine::activeFlag : FLAG_NONE);
-                else
-                    MatrixShowFlag(AnimationEngine::toggle ? AnimationEngine::activeFlag : FLAG_NONE);
+                }
+                else if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+
+                    if (MatrixShouldShowYellow(AnimationEngine::activeFlag)) {
+                        MatrixShowFlag(AnimationEngine::toggle ? AnimationEngine::activeFlag : FLAG_NONE, false);
+                    } else {
+                        MatrixShowFlag(FLAG_NONE, false);
+                    }
+                }
             }
             break;
 
@@ -127,7 +140,7 @@ static void AnimationUpdate() {
                 if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
                     SemaforoShowFlag(AnimationEngine::toggle ? FLAG_RED : FLAG_NONE);
                 else
-                    MatrixShowFlag(AnimationEngine::toggle ? FLAG_RED : FLAG_NONE);
+                    MatrixShowFlag(AnimationEngine::toggle ? FLAG_RED : FLAG_NONE, false);
             }
             break;
 
@@ -145,7 +158,7 @@ static void AnimationUpdate() {
                 if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
                     SemaforoShowFlag(AnimationEngine::toggle ? FLAG_BLUE : FLAG_NONE);
                 else
-                    MatrixShowFlag(AnimationEngine::toggle ? FLAG_BLUE : FLAG_NONE);
+                    MatrixShowFlag(AnimationEngine::toggle ? FLAG_BLUE : FLAG_NONE, false);
             }
             break;
 
@@ -163,7 +176,7 @@ static void AnimationUpdate() {
                 if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
                     SemaforoShowFlag(AnimationEngine::toggle ? FLAG_WET : FLAG_NONE);
                 else
-                    MatrixShowFlag(AnimationEngine::toggle ? FLAG_WET : FLAG_NONE);
+                    MatrixShowFlag(AnimationEngine::toggle ? FLAG_WET : FLAG_NONE, false);
             }
             break;
 
@@ -181,7 +194,7 @@ static void AnimationUpdate() {
                 if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
                     SemaforoShowFlag(FLAG_CHECKERED);
                 else
-                    MatrixShowFlag(FLAG_CHECKERED);
+                    MatrixShowFlag(FLAG_CHECKERED, AnimationEngine::toggle);
             }
             break;
 
@@ -192,19 +205,23 @@ static void AnimationUpdate() {
         // ----------------------------------------------------
         case FLAG_SC:
 
-            if (now - AnimationEngine::lastUpdate >= BLINK_SC_MS) {
+            if (now - AnimationEngine::lastUpdate >= 500) {
                 AnimationEngine::lastUpdate = now;
+                AnimationEngine::toggle = !AnimationEngine::toggle;
 
-                AnimationEngine::scStep ^= 1; // 0→1→0→1…
+                if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
 
-                if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
+                    MatrixShowFlag(FLAG_SC, AnimationEngine::toggle);
+                    FastLED.show();
+                }
+                else {
                     SemaforoShowFlag(FLAG_SC);
-                else
-                    drawLetter(AnimationEngine::scStep ? 'S' : 'C', COLOR_YELLOW);
-
-                FastLED.show();
+                }
             }
             break;
+
+
+
 
 
 
@@ -213,22 +230,20 @@ static void AnimationUpdate() {
         // ----------------------------------------------------
         case FLAG_VSC:
 
-            if (now - AnimationEngine::lastUpdate >= BLINK_VSC_MS) {
+            if (now - AnimationEngine::lastUpdate >= 500) {
                 AnimationEngine::lastUpdate = now;
+                AnimationEngine::toggle = !AnimationEngine::toggle;
 
-                AnimationEngine::vscStep = (AnimationEngine::vscStep + 1) % 3;
+                if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
 
-                char seq = (AnimationEngine::vscStep == 0) ? 'V' :
-                           (AnimationEngine::vscStep == 1) ? 'S' : 'C';
-
-                if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
-                    drawLetter(seq, COLOR_YELLOW);
-
-                FastLED.show();
+                    MatrixShowFlag(FLAG_VSC, AnimationEngine::toggle);
+                    FastLED.show();
+                }
+                else {
+                    SemaforoShowFlag(FLAG_VSC);
+                }
             }
             break;
-
-
 
         default:
             break;
@@ -239,11 +254,9 @@ static void AnimationUpdate() {
     // --------------------------------------------------------
     //  Animazioni semaforo
     // --------------------------------------------------------
-
     switch(AnimationEngine::activeSemState) {
 
         case SEM_START_SEQUENCE:
-            // Gestito da FlagManager (sequenza 1→5)
             break;
 
         case SEM_LIGHTS_OUT:
@@ -251,14 +264,42 @@ static void AnimationUpdate() {
             break;
 
         case SEM_FORMATION_LAP:
-            SemaforoShowFormationLap();
+
+            if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+                // Semaforo: animazione dedicata
+                SemaforoShowFormationLap();
+            }
+            else if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+
+                // Determina la gialla corretta per il settore
+                FlagType sectorYellow =
+                    (DEVICE_ID == 0) ? FLAG_YELLOW_S1 :
+                    (DEVICE_ID == 1) ? FLAG_YELLOW_S2 :
+                                    FLAG_YELLOW_S3;
+
+                // Lampeggio gialla settore-corretta
+                if (now - AnimationEngine::lastUpdate >= BLINK_YELLOW_MS) {
+                    AnimationEngine::lastUpdate = now;
+                    AnimationEngine::toggle = !AnimationEngine::toggle;
+
+                    MatrixShowFlag(AnimationEngine::toggle ? sectorYellow : FLAG_NONE, false);
+                }
+            }
             break;
+
 
         default:
             break;
     }
+    
 }
 
 
+// API pubblica
+namespace AnimationEngine {
+    static inline void start(FlagType flag) { AnimationStart(flag); }
+    static inline void startSem(SemaforoState state) { AnimationStartSem(state); }
+    static inline void update() { AnimationUpdate(); }
+}
 
 #endif

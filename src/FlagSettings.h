@@ -48,7 +48,22 @@
 //    7 = Attack Mode Out (future)
 //
 
-#define DEVICE_ID 0
+// ------------------------------------------------------------
+//  Override rapidi da sketch (.ino)
+//  Definisci questi macro prima di #include <RaceDisplay.h>
+// ------------------------------------------------------------
+
+#ifndef DEVICE_ID
+#define DEVICE_ID       0
+#endif
+
+#ifndef LED_PIN
+#define LED_PIN         6
+#endif
+
+#ifndef LED_BRIGHTNESS
+#define LED_BRIGHTNESS  200     // 0-255 (200 = 78%)
+#endif
 
 
 
@@ -91,8 +106,6 @@
 // ------------------------------------------------------------
 //  Hardware LED
 // ------------------------------------------------------------
-
-#define LED_PIN 6
 
 // Matrici 8×8
 #define MATRIX_WIDTH   8
@@ -157,10 +170,6 @@
 // ------------------------------------------------------------
 //  Parametri LED
 // ------------------------------------------------------------
-
-#define LED_BRIGHTNESS  200     // 0-255 (200 = 78%)
-
-
 
 // ------------------------------------------------------------
 //  Sicurezza: nessun delay() nel sistema

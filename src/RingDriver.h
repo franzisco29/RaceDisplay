@@ -22,8 +22,7 @@
 #include <FastLED.h>
 #include "FlagSettings.h"
 #include "FlagTypes.h"
-#include "colors.h"
-#include "AnimationEngine.h"
+#include "Colors.h"
 
 
 
@@ -31,11 +30,9 @@
 //  Buffer LED per anelli
 // ------------------------------------------------------------
 
-#if DEVICE_TYPE == DEVICE_TYPE_PIT
-    static CRGB ringLeds[PIT_RINGS];
-#elif DEVICE_TYPE == DEVICE_TYPE_SEMAFORO
-    static CRGB ringLeds[SEMAFORO_RINGS];
-#endif
+// Always allocate for the largest ring device so this header compiles
+// cleanly for all DEVICE_TYPE values.
+static CRGB ringLeds[SEMAFORO_RINGS];
 
 
 

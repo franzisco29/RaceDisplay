@@ -4,128 +4,141 @@
 //
 // ============================================================
 //  MatrixDriver.h
-//  Driver per matrici LED 8×8 (ID 0–2)
-//  Strutturato per repository Git (chiaro, modulare, stabile)
+//  Driver per matrici LED 8×8
 // ============================================================
-//
-//  Questo file gestisce:
-//   - Inizializzazione matrice
-//   - Rendering bandiere
-//   - Rendering SC/VSC (lettere S, C, V)
-//   - Rendering checkered
-//   - Rendering numeri (solo ID 0)
-//   - Rendering animazioni non bloccanti
-//
-//  Nessuna logica di routing: quella è in FlagManager.
-//  Questo file si occupa solo di DISEGNARE.
-//
-// ============================================================
-//
 
 #include <FastLED.h>
 #include "FlagSettings.h"
 #include "FlagTypes.h"
-#include "colors.h"
-#include "AnimationEngine.h"
+#include "Colors.h"
+#include <avr/pgmspace.h>
+
 
 
 // ------------------------------------------------------------
-//  Buffer LED matrice
+// Buffer LED
 // ------------------------------------------------------------
 
 static CRGB matrixLeds[MATRIX_LEDS];
 
+int SCletter = 0;
+int VSCletter = 0;
+uint8_t SCframeCount = 0;
+uint8_t VSCframeCount = 0;
 
 
 // ------------------------------------------------------------
-//  Funzioni interne (statiche)
+// XY mapping
 // ------------------------------------------------------------
 
-// Converte coordinate (x,y) in indice lineare
 static inline uint16_t XY(uint8_t x, uint8_t y) {
     return (y * MATRIX_WIDTH) + x;
 }
 
 
-
 // ------------------------------------------------------------
-//  Setup matrice
+// Setup
 // ------------------------------------------------------------
 
 static void MatrixSetup() {
 
     FastLED.addLeds<NEOPIXEL, LED_PIN>(matrixLeds, MATRIX_LEDS);
     FastLED.setBrightness(LED_BRIGHTNESS);
+
     FastLED.clear(true);
 }
 
 
-
 // ------------------------------------------------------------
-//  Clear matrice
+// Clear
 // ------------------------------------------------------------
 
 static void MatrixClear() {
-    for (int i = 0; i < MATRIX_LEDS; i++)
+
+    for(uint8_t i=0;i<MATRIX_LEDS;i++)
         matrixLeds[i] = COLOR_BLACK;
 }
 
 
+// ------------------------------------------------------------
+// FONT 5x7 (PROGMEM)
+// ------------------------------------------------------------
+
+static const uint8_t LETTER_S[7] PROGMEM = {
+0b01110,
+0b10001,
+0b10000,
+0b01110,
+0b00001,
+0b10001,
+0b01110
+};
+
+static const uint8_t LETTER_C[7] PROGMEM = {
+0b01110,
+0b10001,
+0b10000,
+0b10000,
+0b10000,
+0b10001,
+0b01110
+};
+
+static const uint8_t LETTER_V[7] PROGMEM = {
+0b10001,
+0b10001,
+0b10001,
+0b10001,
+0b01010,
+0b01010,
+0b00100
+};
+
 
 // ------------------------------------------------------------
-//  Disegna una lettera 5×7
+// Numeri 5x7
 // ------------------------------------------------------------
-//
-//  Lettere supportate: S, C, V
-//
 
-static void drawLetter(char letter, CRGB color) {
+static const uint8_t NUMBERS[10][7] PROGMEM = {
 
-    MatrixClear();
+{0b01110,0b10001,0b10011,0b10101,0b11001,0b10001,0b01110}, //0
+{0b00100,0b01100,0b00100,0b00100,0b00100,0b00100,0b01110}, //1
+{0b01110,0b10001,0b00001,0b00010,0b00100,0b01000,0b11111}, //2
+{0b11110,0b00001,0b00001,0b01110,0b00001,0b00001,0b11110}, //3
+{0b00010,0b00110,0b01010,0b10010,0b11111,0b00010,0b00010}, //4
+{0b11111,0b10000,0b11110,0b00001,0b00001,0b10001,0b01110}, //5
+{0b00110,0b01000,0b10000,0b11110,0b10001,0b10001,0b01110}, //6
+{0b11111,0b00001,0b00010,0b00100,0b01000,0b01000,0b01000}, //7
+{0b01110,0b10001,0b10001,0b01110,0b10001,0b10001,0b01110}, //8
+{0b01110,0b10001,0b10001,0b01111,0b00001,0b00010,0b01100}  //9
 
-    static const uint8_t LETTER_S[7] = {
-        0b01110,
-        0b10000,
-        0b10000,
-        0b01110,
-        0b00001,
-        0b00001,
-        0b01110
-    };
+};
 
-    static const uint8_t LETTER_C[7] = {
-        0b01110,
-        0b10001,
-        0b10000,
-        0b10000,
-        0b10000,
-        0b10001,
-        0b01110
-    };
+// ------------------------------------------------------------
+//  Array Lettere
+// ------------------------------------------------------------
 
-    static const uint8_t LETTER_V[7] = {
-        0b10001,
-        0b10001,
-        0b10001,
-        0b10001,
-        0b01010,
-        0b01010,
-        0b00100
-    };
+char SC_LETTERS[] = {'S','C'};
+char VSC_LETTERS[] = {'V','S','C'};
 
-    const uint8_t* glyph = nullptr;
+// ------------------------------------------------------------
+// Disegna glyph 5x7
+// ------------------------------------------------------------
 
-    switch(letter) {
-        case 'S': glyph = LETTER_S; break;
-        case 'C': glyph = LETTER_C; break;
-        case 'V': glyph = LETTER_V; break;
-        default: return;
-    }
+static void drawGlyph(const uint8_t* glyph, CRGB color)
+{
+    // NON cancellare lo sfondo!
 
-    for (uint8_t y = 0; y < 7; y++) {
-        for (uint8_t x = 0; x < 5; x++) {
-            if (glyph[y] & (1 << (4 - x))) {
-                matrixLeds[XY(x + 1, y + 1)] = color;
+    for(uint8_t y = 0; y < 7; y++)
+    {
+        uint8_t row = pgm_read_byte(&glyph[y]);
+
+        for(uint8_t x = 0; x < 5; x++)
+        {
+            if(row & (1 << (4 - x)))
+            {
+                // offset centrato: X=1, Y=0
+                matrixLeds[XY(x + 1, y + 0)] = color;
             }
         }
     }
@@ -134,34 +147,60 @@ static void drawLetter(char letter, CRGB color) {
 
 
 // ------------------------------------------------------------
-//  Disegna numero (solo ID 0)
+// Disegna lettera
 // ------------------------------------------------------------
 
-static void drawNumber(uint8_t num, CRGB color) {
+static void drawLetter(char letter, CRGB color)
+{
 
-    MatrixClear();
+    switch(letter)
+    {
 
-    // Numeri 0–9 (5×7)
-    static const uint8_t NUMBERS[10][7] = {
-        {0b01110,0b10001,0b10011,0b10101,0b11001,0b10001,0b01110}, // 0
-        {0b00100,0b01100,0b00100,0b00100,0b00100,0b00100,0b01110}, // 1
-        {0b01110,0b10001,0b00001,0b00010,0b00100,0b01000,0b11111}, // 2
-        {0b11110,0b00001,0b00001,0b01110,0b00001,0b00001,0b11110}, // 3
-        {0b00010,0b00110,0b01010,0b10010,0b11111,0b00010,0b00010}, // 4
-        {0b11111,0b10000,0b11110,0b00001,0b00001,0b10001,0b01110}, // 5
-        {0b00110,0b01000,0b10000,0b11110,0b10001,0b10001,0b01110}, // 6
-        {0b11111,0b00001,0b00010,0b00100,0b01000,0b01000,0b01000}, // 7
-        {0b01110,0b10001,0b10001,0b01110,0b10001,0b10001,0b01110}, // 8
-        {0b01110,0b10001,0b10001,0b01111,0b00001,0b00010,0b01100}  // 9
-    };
+        case 'S':
+            drawGlyph(LETTER_S,color);
+            break;
 
-    if (num > 9) return;
+        case 'C':
+            drawGlyph(LETTER_C,color);
+            break;
 
-    for (uint8_t y = 0; y < 7; y++) {
-        for (uint8_t x = 0; x < 5; x++) {
-            if (NUMBERS[num][y] & (1 << (4 - x))) {
-                matrixLeds[XY(x + 1, y + 1)] = color;
-            }
+        case 'V':
+            drawGlyph(LETTER_V,color);
+            break;
+
+        default:
+            break;
+    }
+
+}
+
+
+// ------------------------------------------------------------
+// Disegna numero
+// ------------------------------------------------------------
+
+static void drawNumber(uint8_t num, CRGB color)
+{
+
+    if(num>9) return;
+
+    drawGlyph(NUMBERS[num],color);
+
+}
+
+// ------------------------------------------------------------
+// Avanza lettera ogni 4 frame (A-B-A-B)
+// ------------------------------------------------------------
+static inline void advanceLetterEvery4Frames(int& letterIndex, uint8_t lettersCount, uint8_t& frameCount)
+{
+    frameCount++;
+
+    if(frameCount >= 4) {
+        frameCount = 0;
+        letterIndex++;
+
+        if(letterIndex >= lettersCount) {
+            letterIndex = 0;
         }
     }
 }
@@ -169,44 +208,134 @@ static void drawNumber(uint8_t num, CRGB color) {
 
 
 // ------------------------------------------------------------
-//  Rendering bandiere
+// Rendering bandiere
 // ------------------------------------------------------------
 
-static void MatrixShowFlag(FlagType flag) {
+static void MatrixShowFlag(FlagType flag, bool toggle = false)
+{
 
     MatrixClear();
 
-    switch(flag) {
+    switch(flag)
+    {
 
         case FLAG_GREEN:
-            fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
+            fill_solid(matrixLeds,MATRIX_LEDS,FLAG_GREEN_COLOR);
             break;
 
         case FLAG_RED:
-            fill_solid(matrixLeds, MATRIX_LEDS, FLAG_RED_COLOR);
+            fill_solid(matrixLeds,MATRIX_LEDS,FLAG_RED_COLOR);
             break;
 
         case FLAG_BLUE:
-            fill_solid(matrixLeds, MATRIX_LEDS, FLAG_BLUE_COLOR);
+            fill_solid(matrixLeds,MATRIX_LEDS,FLAG_BLUE_COLOR);
             break;
 
         case FLAG_CHECKERED:
-            for (int i = 0; i < MATRIX_LEDS; i++)
-                matrixLeds[i] = (i % 2 == 0) ? FLAG_CHECKER_WHITE : FLAG_CHECKER_BLACK;
+
+            for (uint8_t i = 0; i < MATRIX_LEDS; i++) {
+                uint8_t col = i % 8;
+                bool isWhite = toggle ? (col % 2 == 1) : (col % 2 == 0);
+                matrixLeds[i] = isWhite ? FLAG_CHECKER_WHITE : FLAG_CHECKER_BLACK;
+            }
+                            
+
             break;
 
         case FLAG_WET:
-            for (int i = 0; i < MATRIX_LEDS; i++)
-                matrixLeds[i] = (i % 2 == 0) ? FLAG_WET_YELLOW : FLAG_WET_RED;
+
+            for(uint8_t i=0;i<MATRIX_LEDS;i++)
+                matrixLeds[i]=(i%2)?FLAG_WET_RED:FLAG_WET_YELLOW;
+
             break;
+
+
+        // ----------------------------------------------------
+        // FIA sector yellow
+        // ----------------------------------------------------
+
+        case FLAG_YELLOW_S1:
+            if(DEVICE_ID==0)
+                fill_solid(matrixLeds,MATRIX_LEDS,FLAG_YELLOW_COLOR);
+            break;
+
+        case FLAG_YELLOW_S2:
+            if(DEVICE_ID==1)
+                fill_solid(matrixLeds,MATRIX_LEDS,FLAG_YELLOW_COLOR);
+            break;
+
+        case FLAG_YELLOW_S3:
+            if(DEVICE_ID==2)
+                fill_solid(matrixLeds,MATRIX_LEDS,FLAG_YELLOW_COLOR);
+            break;
+
+        case FLAG_YELLOW_FS:
+            if(DEVICE_ID==0 || DEVICE_ID==1)
+                fill_solid(matrixLeds,MATRIX_LEDS,FLAG_YELLOW_COLOR);
+            break;
+
+        case FLAG_YELLOW_ST:
+            if(DEVICE_ID==1 || DEVICE_ID==2)
+                fill_solid(matrixLeds,MATRIX_LEDS,FLAG_YELLOW_COLOR);
+            break;
+
+        case FLAG_YELLOW_TF:
+            if(DEVICE_ID==2 || DEVICE_ID==0)
+                fill_solid(matrixLeds,MATRIX_LEDS,FLAG_YELLOW_COLOR);
+            break;
+
+
+        // ----------------------------------------------------
+        // Safety Car
+        // ----------------------------------------------------
 
         case FLAG_SC:
-            drawLetter('S', COLOR_YELLOW);
+            {
+            const char currentLetter = SC_LETTERS[SCletter];
+
+            if(toggle) {
+                // Frame A: sfondo giallo, lettera nera
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_YELLOW_COLOR);
+                drawLetter(currentLetter, COLOR_BLACK);
+            }
+            else {
+                // Frame B: sfondo nero, lettera gialla
+                fill_solid(matrixLeds, MATRIX_LEDS, COLOR_BLACK);
+                drawLetter(currentLetter, FLAG_YELLOW_COLOR);
+            }
+
+            advanceLetterEvery4Frames(
+                SCletter,
+                (uint8_t)(sizeof(SC_LETTERS) / sizeof(SC_LETTERS[0])),
+                SCframeCount
+            );
             break;
+            }
 
         case FLAG_VSC:
-            drawLetter('V', COLOR_YELLOW);
+            {
+            const char currentLetter = VSC_LETTERS[VSCletter];
+
+            if(toggle) {
+                // Frame A: sfondo giallo, lettera nera
+                Serial.println("VSC: Frame A");
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_YELLOW_COLOR);
+                drawLetter(currentLetter, COLOR_BLACK);
+            }
+            else {
+                // Frame B: sfondo nero, lettera gialla
+                Serial.println("VSC: Frame B");
+                fill_solid(matrixLeds, MATRIX_LEDS, COLOR_BLACK);
+                drawLetter(currentLetter, FLAG_YELLOW_COLOR);
+            }
+
+            advanceLetterEvery4Frames(
+                VSCletter,
+                (uint8_t)(sizeof(VSC_LETTERS) / sizeof(VSC_LETTERS[0])),
+                VSCframeCount
+            );
             break;
+            }
 
         default:
             break;
@@ -214,7 +343,5 @@ static void MatrixShowFlag(FlagType flag) {
 
     FastLED.show();
 }
-
-
 
 #endif

@@ -15,7 +15,7 @@
 
 #include "FlagSettings.h"      // Configurazione hardware e parametri
 #include "FlagTypes.h"         // Enumerazioni bandiere e stati
-#include "colors.h"            // Definizione colori LED
+#include "Colors.h"            // Definizione colori LED
 #include "MatrixDriver.h"      // Driver matrici 8x8
 #include "RingDriver.h"        // Driver anelli LED
 #include "AnimationEngine.h"   // Motore animazioni non bloccanti

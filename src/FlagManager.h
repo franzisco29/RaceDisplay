@@ -1,461 +1,179 @@
 #ifndef FLAG_MANAGER_H
 #define FLAG_MANAGER_H
 
-//
-// ============================================================
-//  FlagManager.h
-//  Gestione logica bandiere e routing dispositivi RaceDisplay
-//  Strutturato per repository Git (chiaro, modulare, stabile)
-// ============================================================
-//
-//  Questo file gestisce:
-//   - Interpretazione comandi (stringhe)
-//   - Routing bandiere verso matrici, PIT, semaforo
-//   - Attivazione animazioni (SC, VSC, Yellow, Checkered, ecc.)
-//   - Gestione stati speciali (start, formation lap)
-//   - Clear e reset
-//
-//  NON disegna LED: delega a MatrixDriver e RingDriver.
-//  NON gestisce animazioni: delega a AnimationEngine.
-//
-// ============================================================
-//
-
 #include "FlagSettings.h"
 #include "FlagTypes.h"
 #include "MatrixDriver.h"
 #include "RingDriver.h"
 #include "AnimationEngine.h"
-#include "colors.h"
-
-
-
-// ------------------------------------------------------------
-//  Stato interno
-// ------------------------------------------------------------
-
-namespace FlagManager {
-
-    static FlagType currentFlag = FLAG_NONE;
-    static PitState currentPit = PIT_OFF;
-    static SemaforoState currentSem = SEM_NONE;
-}
-
-
-
-// ------------------------------------------------------------
-//  Clear completo del dispositivo
-// ------------------------------------------------------------
-
-static void ClearAll() {
-
-    FlagManager::currentFlag = FLAG_NONE;
-    FlagManager::currentPit  = PIT_OFF;
-    FlagManager::currentSem  = SEM_NONE;
-
-    if (DEVICE_TYPE == DEVICE_TYPE_MATRIX)
-        MatrixClear();
-
-    else if (DEVICE_TYPE == DEVICE_TYPE_PIT)
-        PitShow(PIT_OFF);
-
-    else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
-        SemaforoShowLightsOut();
-
-    FastLED.show();
-}
-
-
-
-// ------------------------------------------------------------
-//  Mostra bandiera su dispositivo corrente
-// ------------------------------------------------------------
-
-static void ShowFlag(FlagType flag) {
-
-    FlagManager::currentFlag = flag;
-    AnimationStart(flag);
-
-    if (DEVICE_TYPE == DEVICE_TYPE_MATRIX)
-        MatrixShowFlag(flag);
-
-    else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
-        SemaforoShowFlag(flag);
-
-    FastLED.show();
-}
-
-
-
-// ------------------------------------------------------------
-//  Mostra stato PIT (ID 3–4)
-// ------------------------------------------------------------
-
-static void ShowPit(PitState state) {
-
-    if (DEVICE_TYPE != DEVICE_TYPE_PIT)
-        return;
-
-    FlagManager::currentPit = state;
-    PitShow(state);
-}
-
-
-
-// ------------------------------------------------------------
-//  Mostra stato semaforo (ID 5)
-// ------------------------------------------------------------
-
-static void ShowSemaforo(SemaforoState state) {
-
-    if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
-        return;
-
-    FlagManager::currentSem = state;
-    AnimationStartSem(state);
-
-    switch(state) {
-
-        case SEM_PRE_RACE:
-        case SEM_PRE_10:
-        case SEM_PRE_5:
-        case SEM_PRE_2:
-        case SEM_PRE_1:
-            SemaforoShowLightsOut();
-            break;
-
-        case SEM_START_SEQUENCE:
-            // Sequenza gestita da AnimationEngine
-            break;
-
-        case SEM_LIGHTS_OUT:
-            SemaforoShowLightsOut();
-            break;
-
-        case SEM_FORMATION_LAP:
-            SemaforoShowFormationLap();
-            break;
-
-        default:
-            break;
-    }
-}
-
-
-
-// ------------------------------------------------------------
-//  Interpretazione comandi (stringhe)
-// ------------------------------------------------------------
-//
-//  Esempi:
-//    "GREEN"
-//    "RED"
-//    "YELLOW S1"
-//    "SC"
-//    "VSC"
-//    "CHECK"
-//    "PIT OPEN"
-//    "PIT CLOSE"
-//    "START"
-//    "FORMATION"
-//    "CLEAR"
-//
-
-static void handleCommand(const String& cmd) {
-
-    String c = cmd;
-    c.trim();
-    c.toUpperCase();
-
-
-    // --------------------------------------------------------
-    //  Clear
-    // --------------------------------------------------------
-    if (c == "CLEAR") {
-        ClearAll();
-        return;
-    }
-
-
-    // --------------------------------------------------------
-    //  PIT (solo ID 3–4)
-    // --------------------------------------------------------
-    if (c.startsWith("PIT")) {
-
-        if (c == "PIT OPEN")  ShowPit(PIT_OPEN);
-        if (c == "PIT CLOSE") ShowPit(PIT_CLOSE);
-        if (c == "PIT VALID") ShowPit(PIT_VALID);
-        if (c == "PIT OFF")   ShowPit(PIT_OFF);
-
-        return;
-    }
-
-
-    // --------------------------------------------------------
-    //  Semaforo (solo ID 5)
-    // --------------------------------------------------------
-    if (c.startsWith("START")) {
-        ShowSemaforo(SEM_START_SEQUENCE);
-        return;
-    }
-
-    if (c == "FORMATION") {
-        ShowSemaforo(SEM_FORMATION_LAP);
-        return;
-    }
-
-
-    // --------------------------------------------------------
-    //  Bandiere generali
-    // --------------------------------------------------------
-
-    if (c == "GREEN") ShowFlag(FLAG_GREEN);
-    else if (c == "RED") ShowFlag(FLAG_RED);
-    else if (c == "BLUE") ShowFlag(FLAG_BLUE);
-    else if (c == "CHECK") ShowFlag(FLAG_CHECKERED);
-    else if (c == "WET") ShowFlag(FLAG_WET);
-
-    else if (c == "SC") ShowFlag(FLAG_SC);
-    else if (c == "VSC") ShowFlag(FLAG_VSC);
-
-    else if (c == "YELLOW S1") ShowFlag(FLAG_YELLOW_S1);
-    else if (c == "YELLOW S2") ShowFlag(FLAG_YELLOW_S2);
-    else if (c == "YELLOW S3") ShowFlag(FLAG_YELLOW_S3);
-
-    else if (c == "YELLOW FS") ShowFlag(FLAG_YELLOW_FS);
-    else if (c == "YELLOW ST") ShowFlag(FLAG_YELLOW_ST);
-    else if (c == "YELLOW TF") ShowFlag(FLAG_YELLOW_TF);
-}
-
-
-
-// ------------------------------------------------------------
-//  Update non bloccante
-// ------------------------------------------------------------
-
-static void update() {
-    AnimationUpdate();
-}
-
-
-
-#endif
-#ifndef FLAG_MANAGER_H
-#define FLAG_MANAGER_H
-
-#include "FlagSettings.h"
-#include "FlagTypes.h"
-#include "MatrixDriver.h"
-#include "RingDriver.h"
-#include "AnimationEngine.h"
-#include "colors.h"
+#include "Colors.h"
 #include "Commands.h"
 
-// ------------------------------------------------------------
-//  Stato interno
-// ------------------------------------------------------------
-
 namespace FlagManager {
+
     static FlagType currentFlag = FLAG_NONE;
     static PitState currentPit = PIT_OFF;
     static SemaforoState currentSem = SEM_NONE;
-}
 
-// ------------------------------------------------------------
-//  Clear completo del dispositivo
-// ------------------------------------------------------------
+    static void clearAll() {
 
-static void ClearAll() {
+        // Stop animazioni
+        AnimationEngine::start(FLAG_NONE);
+        AnimationEngine::startSem(SEM_NONE);
 
-    FlagManager::currentFlag = FLAG_NONE;
-    FlagManager::currentPit  = PIT_OFF;
-    FlagManager::currentSem  = SEM_NONE;
+        // Reset stati
+        currentFlag = FLAG_NONE;
+        currentPit  = PIT_OFF;
+        currentSem  = SEM_NONE;
 
-    if (DEVICE_TYPE == DEVICE_TYPE_MATRIX)
-        MatrixClear();
-
-    else if (DEVICE_TYPE == DEVICE_TYPE_PIT)
-        PitShow(PIT_OFF);
-
-    else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
-        SemaforoShowLightsOut();
-
-    FastLED.show();
-}
-
-// ------------------------------------------------------------
-//  Mostra bandiera su dispositivo corrente
-// ------------------------------------------------------------
-
-static void ShowFlag(FlagType flag) {
-
-    FlagManager::currentFlag = flag;
-    AnimationStart(flag);
-
-    if (DEVICE_TYPE == DEVICE_TYPE_MATRIX)
-        MatrixShowFlag(flag);
-
-    else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
-        SemaforoShowFlag(flag);
-
-    FastLED.show();
-}
-
-// ------------------------------------------------------------
-//  Mostra stato PIT (ID 3–4)
-// ------------------------------------------------------------
-
-static void ShowPit(PitState state) {
-
-    if (DEVICE_TYPE != DEVICE_TYPE_PIT)
-        return;
-
-    FlagManager::currentPit = state;
-    PitShow(state);
-}
-
-// ------------------------------------------------------------
-//  Mostra stato semaforo (ID 5)
-// ------------------------------------------------------------
-
-static void ShowSemaforo(SemaforoState state) {
-
-    if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
-        return;
-
-    FlagManager::currentSem = state;
-    AnimationStartSem(state);
-
-    switch(state) {
-
-        case SEM_PRE_RACE:
-        case SEM_PRE_10:
-        case SEM_PRE_5:
-        case SEM_PRE_2:
-        case SEM_PRE_1:
+        // Spegni fisicamente il device
+        if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+            MatrixClear();
+        } 
+        else if (DEVICE_TYPE == DEVICE_TYPE_PIT) {
+            PitShow(PIT_OFF);
+        } 
+        else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
             SemaforoShowLightsOut();
-            break;
+        }
 
-        case SEM_START_SEQUENCE:
-            break;
-
-        case SEM_LIGHTS_OUT:
-            SemaforoShowLightsOut();
-            break;
-
-        case SEM_FORMATION_LAP:
-            SemaforoShowFormationLap();
-            break;
-
-        default:
-            break;
+        FastLED.show();
     }
-}
 
-// ------------------------------------------------------------
-//  Interpretazione comandi (stringhe + Commands.h)
-// ------------------------------------------------------------
 
-static void handleCommand(const String& cmd) {
+    static void showFlag(FlagType flag) {
 
-    String c = cmd;
-    c.trim();
-    c.toUpperCase();
+        currentFlag = flag;
+        AnimationEngine::start(flag);
 
-    // --------------------------------------------------------
-    //  Mappatura comandi da Commands.h (caratteri singoli)
-    // --------------------------------------------------------
-    if (c.length() == 1) {
-        char ch = c[0];
+        if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+            MatrixShowFlag(flag);
+        } else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+            SemaforoShowFlag(flag);
+        }
 
-        switch (ch) {
+        FastLED.show();
+    }
 
-            case GREEN_FLAG_CMD:       ShowFlag(FLAG_GREEN); return;
-            case RED_FLAG_CMD:         ShowFlag(FLAG_RED); return;
+    static void showPit(PitState state) {
 
-            case YELLOW_F_CMD:         ShowFlag(FLAG_YELLOW_S1); return;
-            case YELLOW_S_CMD:         ShowFlag(FLAG_YELLOW_S2); return;
-            case YELLOW_T_CMD:         ShowFlag(FLAG_YELLOW_S3); return;
+        if (DEVICE_TYPE != DEVICE_TYPE_PIT)
+            return;
 
-            case YELLOW_FS_CMD:        ShowFlag(FLAG_YELLOW_FS); return;
-            case YELLOW_ST_CMD:        ShowFlag(FLAG_YELLOW_ST); return;
-            case YELLOW_TF_CMD:        ShowFlag(FLAG_YELLOW_TF); return;
+        currentPit = state;
+        PitShow(state);
+    }
 
-            case WET_CMD:              ShowFlag(FLAG_WET); return;
+    static void showSemaforo(SemaforoState state) {
 
-            case SAFETY_CAR_CMD:       ShowFlag(FLAG_SC); return;
-            case FULL_YELLOW_CMD:      ShowFlag(FLAG_VSC); return;
+        if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
+            return;
 
-            case PIT_OPEN_CMD:         ShowPit(PIT_OPEN); return;
-            case PIT_CLOSER_CMD:       ShowPit(PIT_CLOSE); return;
-            case PIT_VALID_CMD:        ShowPit(PIT_VALID); return;
+        currentSem = state;
+        AnimationEngine::startSem(state);
 
-            case END_SESSION_CMD:      ShowFlag(FLAG_CHECKERED); return;
+        switch (state) {
+            case SEM_PRE_RACE:
+            case SEM_PRE_10:
+            case SEM_PRE_5:
+            case SEM_PRE_2:
+            case SEM_PRE_1:
+            case SEM_LIGHTS_OUT:
+                SemaforoShowLightsOut();
+                break;
 
-            case CLC_CMD:              ClearAll(); return;
+            case SEM_FORMATION_LAP:
+                SemaforoShowFormationLap();
+                break;
 
-            case FORMATION_LAP_CMD:    ShowSemaforo(SEM_FORMATION_LAP); return;
-            case LIGHTS_OUT_CMD:       ShowSemaforo(SEM_LIGHTS_OUT); return;
-            case START_PROC_CMD:       ShowSemaforo(SEM_START_SEQUENCE); return;
+            case SEM_START_SEQUENCE:
+            default:
+                break;
         }
     }
 
-    // --------------------------------------------------------
-    //  Comandi testuali standard
-    // --------------------------------------------------------
+    static void handleCommand(const String& cmd) {
 
-    if (c == "CLEAR") {
-        ClearAll();
-        return;
+        String c = cmd;
+        c.trim();
+
+        // Single-char protocol from Commands.h.
+        if (c.length() == 1) {
+            char ch = c[0];
+
+            switch (ch) {
+                case GREEN_FLAG_CMD:      showFlag(FLAG_GREEN); return;
+                case RED_FLAG_CMD:        showFlag(FLAG_RED); return;
+                case YELLOW_F_CMD:        showFlag(FLAG_YELLOW_S1); return;
+                case YELLOW_S_CMD:        showFlag(FLAG_YELLOW_S2); return;
+                case YELLOW_T_CMD:        showFlag(FLAG_YELLOW_S3); return;
+                case YELLOW_FS_CMD:       showFlag(FLAG_YELLOW_FS); return;
+                case YELLOW_ST_CMD:       showFlag(FLAG_YELLOW_ST); return;
+                case YELLOW_TF_CMD:       showFlag(FLAG_YELLOW_TF); return;
+                case WET_CMD:             showFlag(FLAG_WET); return;
+                case SAFETY_CAR_CMD:      showFlag(FLAG_SC); return;
+                case FULL_YELLOW_CMD:     showFlag(FLAG_VSC); return;
+                case PIT_OPEN_CMD:        showPit(PIT_OPEN); return;
+                case PIT_CLOSER_CMD:      showPit(PIT_CLOSE); return;
+                case PIT_VALID_CMD:       showPit(PIT_VALID); return;
+                case END_SESSION_CMD:     showFlag(FLAG_CHECKERED); return;
+                case CLC_CMD:             clearAll(); return;
+                case FORMATION_LAP_CMD:   showSemaforo(SEM_FORMATION_LAP); return;
+                case LIGHTS_OUT_CMD:      showSemaforo(SEM_LIGHTS_OUT); return;
+                case START_PROC_CMD:      showSemaforo(SEM_START_SEQUENCE); return;
+                default: break;
+            }
+        }
+
+        c.toUpperCase();
+
+        if (c == "CLEAR") {
+            clearAll();
+            return;
+        }
+
+        if (c.startsWith("PIT")) {
+            if (c == "PIT OPEN")  showPit(PIT_OPEN);
+            if (c == "PIT CLOSE") showPit(PIT_CLOSE);
+            if (c == "PIT VALID") showPit(PIT_VALID);
+            if (c == "PIT OFF")   showPit(PIT_OFF);
+            return;
+        }
+
+        if (c.startsWith("START")) {
+            showSemaforo(SEM_START_SEQUENCE);
+            return;
+        }
+
+        if (c == "FORMATION") {
+            showSemaforo(SEM_FORMATION_LAP);
+            return;
+        }
+
+        if (c == "GREEN") showFlag(FLAG_GREEN);
+        else if (c == "RED") showFlag(FLAG_RED);
+        else if (c == "BLUE") showFlag(FLAG_BLUE);
+        else if (c == "CHECK") showFlag(FLAG_CHECKERED);
+        else if (c == "WET") showFlag(FLAG_WET);
+        else if (c == "SC") showFlag(FLAG_SC);
+        else if (c == "VSC") showFlag(FLAG_VSC);
+        else if (c == "YELLOW S1") showFlag(FLAG_YELLOW_S1);
+        else if (c == "YELLOW S2") showFlag(FLAG_YELLOW_S2);
+        else if (c == "YELLOW S3") showFlag(FLAG_YELLOW_S3);
+        else if (c == "YELLOW FS") showFlag(FLAG_YELLOW_FS);
+        else if (c == "YELLOW ST") showFlag(FLAG_YELLOW_ST);
+        else if (c == "YELLOW TF") showFlag(FLAG_YELLOW_TF);
     }
 
-    // PIT
-    if (c.startsWith("PIT")) {
-
-        if (c == "PIT OPEN")  ShowPit(PIT_OPEN);
-        if (c == "PIT CLOSE") ShowPit(PIT_CLOSE);
-        if (c == "PIT VALID") ShowPit(PIT_VALID);
-        if (c == "PIT OFF")   ShowPit(PIT_OFF);
-
-        return;
+    static void update() {
+        AnimationEngine::update();
     }
-
-    // Semaforo
-    if (c.startsWith("START")) {
-        ShowSemaforo(SEM_START_SEQUENCE);
-        return;
-    }
-
-    if (c == "FORMATION") {
-        ShowSemaforo(SEM_FORMATION_LAP);
-        return;
-    }
-
-    // Bandiere generali
-    if (c == "GREEN") ShowFlag(FLAG_GREEN);
-    else if (c == "RED") ShowFlag(FLAG_RED);
-    else if (c == "BLUE") ShowFlag(FLAG_BLUE);
-    else if (c == "CHECK") ShowFlag(FLAG_CHECKERED);
-    else if (c == "WET") ShowFlag(FLAG_WET);
-
-    else if (c == "SC") ShowFlag(FLAG_SC);
-    else if (c == "VSC") ShowFlag(FLAG_VSC);
-
-    else if (c == "YELLOW S1") ShowFlag(FLAG_YELLOW_S1);
-    else if (c == "YELLOW S2") ShowFlag(FLAG_YELLOW_S2);
-    else if (c == "YELLOW S3") ShowFlag(FLAG_YELLOW_S3);
-
-    else if (c == "YELLOW FS") ShowFlag(FLAG_YELLOW_FS);
-    else if (c == "YELLOW ST") ShowFlag(FLAG_YELLOW_ST);
-    else if (c == "YELLOW TF") ShowFlag(FLAG_YELLOW_TF);
 }
 
-// ------------------------------------------------------------
-//  Update non bloccante
-// ------------------------------------------------------------
-
-static void update() {
-    AnimationUpdate();
-}
+// Compatibility wrappers for existing sketches using old global names.
+static inline void ClearAll() { FlagManager::clearAll(); }
+static inline void ShowFlag(FlagType flag) { FlagManager::showFlag(flag); }
+static inline void ShowPit(PitState state) { FlagManager::showPit(state); }
+static inline void ShowSemaforo(SemaforoState state) { FlagManager::showSemaforo(state); }
 
 #endif
