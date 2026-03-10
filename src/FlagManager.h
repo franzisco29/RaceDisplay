@@ -11,14 +11,9 @@
 
 namespace FlagManager {
 
-    // Stati correnti
     static FlagType currentFlag = FLAG_NONE;
     static PitState currentPit = PIT_OFF;
     static SemaforoState currentSem = SEM_NONE;
-
-    // Gestione speciale GREEN FLAG
-    static bool greenActive = false;
-    static unsigned long greenStartTime = 0;
 
 
     // ------------------------------------------------------------
@@ -32,7 +27,6 @@ namespace FlagManager {
         currentFlag = FLAG_NONE;
         currentPit  = PIT_OFF;
         currentSem  = SEM_NONE;
-        greenActive = false;
 
         if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
             MatrixClear();
@@ -49,30 +43,9 @@ namespace FlagManager {
 
 
     // ------------------------------------------------------------
-    //  SHOW FLAG (GREEN gestita separatamente)
+    //  SHOW FLAG (tutta la logica è in AnimationEngine)
     // ------------------------------------------------------------
     static void showFlag(FlagType flag) {
-
-        // GREEN FLAG → fissa 3 secondi
-        if (flag == FLAG_GREEN) {
-            greenActive = true;
-            greenStartTime = millis();
-            currentFlag = FLAG_GREEN;
-
-            // Mostra la green UNA SOLA VOLTA
-            if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
-                MatrixShowFlag(FLAG_GREEN, false);
-            } 
-            else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
-                SemaforoShowFlag(FLAG_GREEN);
-            }
-
-            FastLED.show(); // un solo refresh
-            return;
-        }
-
-        // Tutte le altre bandiere → reset green
-        greenActive = false;
 
         currentFlag = flag;
         AnimationEngine::start(flag);
@@ -211,34 +184,9 @@ namespace FlagManager {
 
 
     // ------------------------------------------------------------
-    //  UPDATE (GREEN non ridisegna → zero lag)
+    //  UPDATE
     // ------------------------------------------------------------
     static void update() {
-
-        // GREEN FLAG attiva → fissa per 3 secondi
-        if (greenActive) {
-
-            // NON ridisegnare la green ogni frame!
-            // È già stata mostrata in showFlag()
-
-            if (millis() - greenStartTime >= 3000) {
-                greenActive = false;
-                currentFlag = FLAG_NONE;
-
-                if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
-                    MatrixClear();
-                } 
-                else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
-                    SemaforoShowLightsOut();
-                }
-
-                FastLED.show(); // un solo refresh
-            }
-
-            return; // evita interferenze
-        }
-
-        // Normale gestione animazioni
         AnimationEngine::update();
     }
 }

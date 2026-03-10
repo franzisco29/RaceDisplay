@@ -27,6 +27,10 @@ namespace AnimationEngine {
 
     static uint8_t scStep = 0;
     static uint8_t vscStep = 0;
+
+    // GREEN FLAG temporizzata
+    static bool greenActive = false;
+    static unsigned long greenStartTime = 0;
 }
 
 
@@ -34,6 +38,26 @@ namespace AnimationEngine {
 //  Avvia animazione bandiera
 // ------------------------------------------------------------
 static void AnimationStart(FlagType flag) {
+
+    // GREEN FLAG → gestita qui
+    if (flag == FLAG_GREEN) {
+        AnimationEngine::greenActive = true;
+        AnimationEngine::greenStartTime = millis();
+        AnimationEngine::activeFlag = FLAG_GREEN;
+
+        if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+            MatrixShowFlag(FLAG_GREEN, false);
+        } else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+            SemaforoShowFlag(FLAG_GREEN);
+        }
+
+        FastLED.show();
+        return;
+    }
+
+    // Se arriva un'altra bandiera → interrompi green
+    AnimationEngine::greenActive = false;
+
     AnimationEngine::activeFlag = flag;
     AnimationEngine::scStep = 0;
     AnimationEngine::vscStep = 0;
@@ -64,13 +88,13 @@ static bool MatrixShouldShowYellow(FlagType flag) {
         case FLAG_YELLOW_S3:
             return (DEVICE_ID == 2);
 
-        case FLAG_YELLOW_FS:   // S1 + S2
+        case FLAG_YELLOW_FS:
             return (DEVICE_ID == 0 || DEVICE_ID == 1);
 
-        case FLAG_YELLOW_ST:   // S2 + S3
+        case FLAG_YELLOW_ST:
             return (DEVICE_ID == 1 || DEVICE_ID == 2);
 
-        case FLAG_YELLOW_TF:   // S3 + S1
+        case FLAG_YELLOW_TF:
             return (DEVICE_ID == 2 || DEVICE_ID == 0);
 
         default:
@@ -86,6 +110,38 @@ static void AnimationUpdate() {
 
     unsigned long now = millis();
 
+    // --------------------------------------------------------
+    //  GREEN FLAG temporizzata (3 secondi)
+    // --------------------------------------------------------
+    if (AnimationEngine::greenActive) {
+
+        // Se arriva un'altra bandiera → interrompi subito
+        if (AnimationEngine::activeFlag != FLAG_GREEN) {
+            AnimationEngine::greenActive = false;
+            return;
+        }
+
+        // Dopo 3 secondi → spegni e torna a NONE
+        if (now - AnimationEngine::greenStartTime >= 3000) {
+            AnimationEngine::greenActive = false;
+            AnimationEngine::activeFlag = FLAG_NONE;
+
+            if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+                MatrixClear();
+            } else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+                SemaforoShowLightsOut();
+            }
+
+            FastLED.show();
+        }
+
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    //  Se non c'è nulla da animare
+    // --------------------------------------------------------
     if (AnimationEngine::activeFlag == FLAG_NONE &&
         AnimationEngine::activeSemState == SEM_NONE)
         return;
@@ -96,10 +152,6 @@ static void AnimationUpdate() {
     // --------------------------------------------------------
     switch(AnimationEngine::activeFlag) {
 
-
-        // ----------------------------------------------------
-        //  Yellow (300 ms) — con logica settore corretta
-        // ----------------------------------------------------
         case FLAG_YELLOW_S1:
         case FLAG_YELLOW_S2:
         case FLAG_YELLOW_S3:
@@ -126,13 +178,7 @@ static void AnimationUpdate() {
             }
             break;
 
-
-
-        // ----------------------------------------------------
-        //  Red flag (500 ms)
-        // ----------------------------------------------------
         case FLAG_RED:
-
             if (now - AnimationEngine::lastUpdate >= BLINK_RED_MS) {
                 AnimationEngine::lastUpdate = now;
                 AnimationEngine::toggle = !AnimationEngine::toggle;
@@ -144,13 +190,7 @@ static void AnimationUpdate() {
             }
             break;
 
-
-
-        // ----------------------------------------------------
-        //  Blue flag (500 ms)
-        // ----------------------------------------------------
         case FLAG_BLUE:
-
             if (now - AnimationEngine::lastUpdate >= BLINK_BLUE_MS) {
                 AnimationEngine::lastUpdate = now;
                 AnimationEngine::toggle = !AnimationEngine::toggle;
@@ -162,13 +202,7 @@ static void AnimationUpdate() {
             }
             break;
 
-
-
-        // ----------------------------------------------------
-        //  Wet Race (500 ms)
-        // ----------------------------------------------------
         case FLAG_WET:
-
             if (now - AnimationEngine::lastUpdate >= BLINK_WET_MS) {
                 AnimationEngine::lastUpdate = now;
                 AnimationEngine::toggle = !AnimationEngine::toggle;
@@ -180,13 +214,7 @@ static void AnimationUpdate() {
             }
             break;
 
-
-
-        // ----------------------------------------------------
-        //  Checkered (500 ms)
-        // ----------------------------------------------------
         case FLAG_CHECKERED:
-
             if (now - AnimationEngine::lastUpdate >= BLINK_CHECK_MS) {
                 AnimationEngine::lastUpdate = now;
                 AnimationEngine::toggle = !AnimationEngine::toggle;
@@ -198,19 +226,12 @@ static void AnimationUpdate() {
             }
             break;
 
-
-
-        // ----------------------------------------------------
-        //  SC (S ↔ C)
-        // ----------------------------------------------------
         case FLAG_SC:
-
             if (now - AnimationEngine::lastUpdate >= 500) {
                 AnimationEngine::lastUpdate = now;
                 AnimationEngine::toggle = !AnimationEngine::toggle;
 
                 if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
-
                     MatrixShowFlag(FLAG_SC, AnimationEngine::toggle);
                     FastLED.show();
                 }
@@ -220,22 +241,12 @@ static void AnimationUpdate() {
             }
             break;
 
-
-
-
-
-
-        // ----------------------------------------------------
-        //  VSC (V → S → C)
-        // ----------------------------------------------------
         case FLAG_VSC:
-
             if (now - AnimationEngine::lastUpdate >= 500) {
                 AnimationEngine::lastUpdate = now;
                 AnimationEngine::toggle = !AnimationEngine::toggle;
 
                 if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
-
                     MatrixShowFlag(FLAG_VSC, AnimationEngine::toggle);
                     FastLED.show();
                 }
@@ -248,7 +259,6 @@ static void AnimationUpdate() {
         default:
             break;
     }
-
 
 
     // --------------------------------------------------------
@@ -266,18 +276,15 @@ static void AnimationUpdate() {
         case SEM_FORMATION_LAP:
 
             if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
-                // Semaforo: animazione dedicata
                 SemaforoShowFormationLap();
             }
             else if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
 
-                // Determina la gialla corretta per il settore
                 FlagType sectorYellow =
                     (DEVICE_ID == 0) ? FLAG_YELLOW_S1 :
                     (DEVICE_ID == 1) ? FLAG_YELLOW_S2 :
-                                    FLAG_YELLOW_S3;
+                                       FLAG_YELLOW_S3;
 
-                // Lampeggio gialla settore-corretta
                 if (now - AnimationEngine::lastUpdate >= BLINK_YELLOW_MS) {
                     AnimationEngine::lastUpdate = now;
                     AnimationEngine::toggle = !AnimationEngine::toggle;
@@ -287,11 +294,9 @@ static void AnimationUpdate() {
             }
             break;
 
-
         default:
             break;
     }
-    
 }
 
 
