@@ -21,6 +21,19 @@
 #include "AnimationEngine.h"   // Motore animazioni non bloccanti
 #include "FlagManager.h"       // Logica bandiere e routing per ID
 
+// ------------------------------------------------------------
+//  Abilitazione/disabilitazione pannelli LED
+// ------------------------------------------------------------
+#ifndef ENABLE_PANELS
+#define ENABLE_PANELS true   // true = pannelli attivi, false = disattivati
+#endif
+
+#if ENABLE_PANELS
+#pragma message("RaceDisplay: LED panels ENABLED")
+#else
+#pragma message("RaceDisplay: LED panels DISABLED")
+#endif
+
 
 // ------------------------------------------------------------
 //  Classe principale RaceDisplay
@@ -34,6 +47,8 @@ public:
     //  Setup generale del dispositivo
     // --------------------------------------------------------
     void begin() {
+
+    #if ENABLE_PANELS
         #if DEVICE_TYPE == DEVICE_TYPE_MATRIX
             MatrixSetup();
         #elif DEVICE_TYPE == DEVICE_TYPE_PIT
@@ -41,16 +56,26 @@ public:
         #elif DEVICE_TYPE == DEVICE_TYPE_SEMAFORO
             SemaforoRingSetup();
         #endif
+    #endif
+
     }
+
 
 
     // --------------------------------------------------------
     //  Loop principale (non bloccante)
     // --------------------------------------------------------
-    void update() {
-        AnimationEngine::update();
-        FlagManager::update();
-    }
+    #if ENABLE_PANELS
+        void update() {
+            AnimationEngine::update();
+            FlagManager::update();
+        }
+    #else
+        inline void update() {
+            // pannelli disattivati → nessun rendering
+        }
+    #endif
+
 
 
     // --------------------------------------------------------

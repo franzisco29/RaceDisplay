@@ -11,7 +11,32 @@
 #include "FlagSettings.h"
 #include "FlagTypes.h"
 #include "Colors.h"
-#include <avr/pgmspace.h>
+
+
+// --- FIX COMPATIBILITÀ AVR / ESP / RISC-V -------------------
+#if defined(ESP32) || defined(ESP8266)
+// Su ESP32/ESP8266/ESP32-C3 PROGMEM è già gestito dal compilatore
+    #ifndef PROGMEM
+        #define PROGMEM
+    #endif
+    #ifndef pgm_read_byte
+        #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
+    #endif
+
+#elif defined(ARDUINO_ARCH_AVR)
+// Su AVR serve la libreria specifica
+    #include <avr/pgmspace.h>
+
+#else
+// Altre architetture (RP2040, STM32, ecc.)
+    #ifndef PROGMEM
+        #define PROGMEM
+    #endif
+    #ifndef pgm_read_byte
+        #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
+    #endif
+#endif
+// -------------------------------------------------------------
 
 
 
@@ -64,35 +89,37 @@ static void MatrixClear() {
 // FONT 5x7 (PROGMEM)
 // ------------------------------------------------------------
 
-static const uint8_t LETTER_S[7] PROGMEM = {
-0b01110,
-0b10001,
-0b10000,
-0b01110,
-0b00001,
-0b10001,
-0b01110
+static const uint8_t LETTER_S[6] PROGMEM = {
+    0b011110,
+    0b110000,
+    0b111100,
+    0b001111,
+    0b000011,
+    0b011110
 };
 
-static const uint8_t LETTER_C[7] PROGMEM = {
-0b01110,
-0b10001,
-0b10000,
-0b10000,
-0b10000,
-0b10001,
-0b01110
+
+
+
+static const uint8_t LETTER_C[6] PROGMEM = {
+0b011110,
+0b100001,
+0b100000,
+0b100000,
+0b100001,
+0b011110
 };
 
-static const uint8_t LETTER_V[7] PROGMEM = {
-0b10001,
-0b10001,
-0b10001,
-0b10001,
-0b01010,
-0b01010,
-0b00100
+
+static const uint8_t LETTER_V[6] PROGMEM = {
+0b100001,
+0b100001,
+0b100001,
+0b010010,
+0b010010,
+0b001100
 };
+
 
 
 // ------------------------------------------------------------
@@ -127,22 +154,20 @@ char VSC_LETTERS[] = {'V','S','C'};
 
 static void drawGlyph(const uint8_t* glyph, CRGB color)
 {
-    // NON cancellare lo sfondo!
-
-    for(uint8_t y = 0; y < 7; y++)
+    for(uint8_t y = 0; y < 6; y++)
     {
         uint8_t row = pgm_read_byte(&glyph[y]);
 
-        for(uint8_t x = 0; x < 5; x++)
+        for(uint8_t x = 0; x < 6; x++)
         {
-            if(row & (1 << (4 - x)))
+            if(row & (1 << (5 - x)))
             {
-                // offset centrato: X=1, Y=0
-                matrixLeds[XY(x + 1, y + 0)] = color;
+                matrixLeds[XY(x + 1, y + 1)] = color;
             }
         }
     }
 }
+
 
 
 

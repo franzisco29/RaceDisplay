@@ -4,8 +4,8 @@
 //CMD OF CONNECTION & UTILITIES
 
 #define CONN_CMD 'C'
-#define FAN_CMD 'W'
 #define DSCN_CMD 'c'
+
 //CMD FOR START
 #define LIGHTS_OUT_CMD 'S'  
 #define START_PROC_CMD 's' 
@@ -14,6 +14,7 @@
 //CMD FOR FLAGS
 #define GREEN_FLAG_CMD 'G'
 #define RED_FLAG_CMD 'R'
+#define BLUE_FLAG_CMD 'B'
 
 #define YELLOW_F_CMD '1'
 #define YELLOW_S_CMD '2'
@@ -53,7 +54,6 @@
 /// --- MENU ----///
 
 #define STATUS_CMD 'A'
-#define BACK 'B'
 
  
 #endif
