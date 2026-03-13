@@ -33,6 +33,10 @@ enum FlagType {
     FLAG_GREEN,             // Green flag
     FLAG_RED,               // Red flag
     FLAG_BLUE,              // Blue flag
+    FLAG_BLUE_S1,           // Blue settore 1
+    FLAG_BLUE_S2,           // Blue settore 2
+    FLAG_BLUE_S3,           // Blue settore 3
+    FLAG_BLUE_PIT,          // Blue PIT
     FLAG_YELLOW_S1,         // Yellow settore 1
     FLAG_YELLOW_S2,         // Yellow settore 2
     FLAG_YELLOW_S3,         // Yellow settore 3

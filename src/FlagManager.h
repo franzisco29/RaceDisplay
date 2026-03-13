@@ -144,6 +144,51 @@ namespace FlagManager {
 
         c.toUpperCase();
 
+        // ------------------------------------------------------------
+        // Nuovo protocollo 2 caratteri
+        // ------------------------------------------------------------
+
+        if (c == CMD_GREEN)          { showFlag(FLAG_GREEN); return; }
+        if (c == CMD_RED)            { showFlag(FLAG_RED); return; }
+        if (c == CMD_BLUE)           { showFlag(FLAG_BLUE); return; }
+        if (c == CMD_WET)            { showFlag(FLAG_WET); return; }
+        if (c == CMD_CHECKERED)      { showFlag(FLAG_CHECKERED); return; }
+
+        if (c == CMD_YELLOW_S1)      { showFlag(FLAG_YELLOW_S1); return; }
+        if (c == CMD_YELLOW_S2)      { showFlag(FLAG_YELLOW_S2); return; }
+        if (c == CMD_YELLOW_S3)      { showFlag(FLAG_YELLOW_S3); return; }
+        if (c == CMD_YELLOW_FS)      { showFlag(FLAG_YELLOW_FS); return; }
+        if (c == CMD_YELLOW_ST)      { showFlag(FLAG_YELLOW_ST); return; }
+        if (c == CMD_YELLOW_TF)      { showFlag(FLAG_YELLOW_TF); return; }
+
+        if (c == CMD_BLUE_S1)        { showFlag(FLAG_BLUE_S1); return; }
+        if (c == CMD_BLUE_S2)        { showFlag(FLAG_BLUE_S2); return; }
+        if (c == CMD_BLUE_S3)        { showFlag(FLAG_BLUE_S3); return; }
+        if (c == CMD_BLUE_PIT)       { showFlag(FLAG_BLUE_PIT); return; }
+
+        if (c == CMD_SAFETY_CAR)     { showFlag(FLAG_SC); return; }
+        if (c == CMD_VIRTUAL_SC)     { showFlag(FLAG_VSC); return; }
+
+        if (c == CMD_PIT_OPEN)       { showPit(PIT_OPEN); return; }
+        if (c == CMD_PIT_CLOSE)      { showPit(PIT_CLOSE); return; }
+        if (c == CMD_PIT_VALID)      { showPit(PIT_VALID); return; }
+        if (c == CMD_PIT_OFF)        { showPit(PIT_OFF); return; }
+
+        if (c == CMD_LIGHTS_OUT)     { showSemaforo(SEM_LIGHTS_OUT); return; }
+        if (c == CMD_START_PROC)     { showSemaforo(SEM_START_SEQUENCE); return; }
+        if (c == CMD_FORMATION_LAP)  { showSemaforo(SEM_FORMATION_LAP); return; }
+        if (c == CMD_PRE_RACE)       { showSemaforo(SEM_PRE_RACE); return; }
+
+        if (c == CMD_START_LIGHT_1)  { showSemaforo(SEM_START_SEQUENCE); /* custom */ return; }
+        if (c == CMD_START_LIGHT_2)  { /* idem */ return; }
+        if (c == CMD_START_LIGHT_3)  { /* idem */ return; }
+        if (c == CMD_START_LIGHT_4)  { /* idem */ return; }
+        if (c == CMD_START_LIGHT_5)  { /* idem */ return; }
+
+        if (c == CMD_CLEAR_ALL)      { clearAll(); return; }
+        if (c == CMD_CLEAR_YELLOW)   { showFlag(FLAG_NONE); return; }
+
+
         if (c == "CLEAR") {
             clearAll();
             return;

@@ -252,9 +252,21 @@ static void MatrixShowFlag(FlagType flag, bool toggle = false)
             fill_solid(matrixLeds,MATRIX_LEDS,FLAG_RED_COLOR);
             break;
 
-        case FLAG_BLUE:
-            fill_solid(matrixLeds,MATRIX_LEDS,FLAG_BLUE_COLOR);
+        case FLAG_BLUE_S1:
+            if (DEVICE_ID == 0)
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_BLUE_COLOR);
             break;
+
+        case FLAG_BLUE_S2:
+            if (DEVICE_ID == 1)
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_BLUE_COLOR);
+            break;
+
+        case FLAG_BLUE_S3:
+            if (DEVICE_ID == 2)
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_BLUE_COLOR);
+            break;
+
 
         case FLAG_CHECKERED:
 

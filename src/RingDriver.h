@@ -149,11 +149,18 @@ static void SemaforoShowFlag(FlagType flag) {
 
 
         // ----------------------------------------------------
-        //  Blue flag → tutti blu lampeggianti
+        //  Blue flag → solo settore attivo lampeggiante (gestito da AnimationEngine)
         // ----------------------------------------------------
-        case FLAG_BLUE:
-            for (int i = 0; i < SEMAFORO_RINGS; i++)
-                ringLeds[i] = SEM_BLUE_COLOR;
+        case FLAG_BLUE_S1:
+            ringLeds[0] = SEM_BLUE_COLOR;
+            break;
+
+        case FLAG_BLUE_S2:
+            ringLeds[2] = SEM_BLUE_COLOR;
+            break;
+
+        case FLAG_BLUE_S3:
+            ringLeds[4] = SEM_BLUE_COLOR;
             break;
 
 

@@ -73,7 +73,7 @@ static void AnimationStartSem(SemaforoState state) {
 
 
 // ------------------------------------------------------------
-//  Funzione di supporto: mostra gialla SOLO se settore corretto
+//  Funzione di supporto: mostra gialla SOLO se settore corretto o blue SOLO se settore corretto (per matrici)
 // ------------------------------------------------------------
 static bool MatrixShouldShowYellow(FlagType flag) {
 
@@ -96,6 +96,25 @@ static bool MatrixShouldShowYellow(FlagType flag) {
 
         case FLAG_YELLOW_TF:
             return (DEVICE_ID == 2 || DEVICE_ID == 0);
+
+        default:
+            return false;
+    }
+}
+
+
+static bool MatrixShouldShowBlue(FlagType flag) {
+
+    switch(flag) {
+
+        case FLAG_BLUE_S1:
+            return (DEVICE_ID == 0);
+
+        case FLAG_BLUE_S2:
+            return (DEVICE_ID == 1);
+
+        case FLAG_BLUE_S3:
+            return (DEVICE_ID == 2);
 
         default:
             return false;
@@ -189,18 +208,41 @@ static void AnimationUpdate() {
                     MatrixShowFlag(AnimationEngine::toggle ? FLAG_RED : FLAG_NONE, false);
             }
             break;
-
+        
         case FLAG_BLUE:
+        case FLAG_BLUE_S1:
+        case FLAG_BLUE_S2:
+        case FLAG_BLUE_S3:
+
             if (now - AnimationEngine::lastUpdate >= BLINK_BLUE_MS) {
+
                 AnimationEngine::lastUpdate = now;
                 AnimationEngine::toggle = !AnimationEngine::toggle;
 
-                if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
-                    SemaforoShowFlag(AnimationEngine::toggle ? FLAG_BLUE : FLAG_NONE);
-                else
-                    MatrixShowFlag(AnimationEngine::toggle ? FLAG_BLUE : FLAG_NONE, false);
+                if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+                    SemaforoShowFlag(AnimationEngine::toggle ? AnimationEngine::activeFlag : FLAG_NONE);
+                }
+                else if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+
+                    // Blue globale
+                    if (AnimationEngine::activeFlag == FLAG_BLUE) {
+                        MatrixShowFlag(AnimationEngine::toggle ? FLAG_BLUE : FLAG_NONE, false);
+                    }
+                    // Blue settoriale
+                    else if (MatrixShouldShowBlue(AnimationEngine::activeFlag)) {
+                        MatrixShowFlag(AnimationEngine::toggle ? AnimationEngine::activeFlag : FLAG_NONE, false);
+                    }
+                    else {
+                        MatrixShowFlag(FLAG_NONE, false);
+                    }
+                }
+                else if (DEVICE_TYPE == DEVICE_TYPE_PIT) {
+                    // Nessuna logica BLUE PIT → ignoriamo
+                }
             }
             break;
+
+
 
         case FLAG_WET:
             if (now - AnimationEngine::lastUpdate >= BLINK_WET_MS) {
