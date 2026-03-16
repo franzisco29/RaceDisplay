@@ -12,11 +12,28 @@
 // ------------------------------------------------------------
 //  BANDIERE BASE
 // ------------------------------------------------------------
-#define CMD_GREEN          "FG"
+#define CMD_GREEN          "FG"   // Green globale (tutti i device)
 #define CMD_RED            "FR"
 #define CMD_BLUE           "FB"
 #define CMD_WET            "FW"
 #define CMD_CHECKERED      "FC"
+
+
+// ------------------------------------------------------------
+//  GREEN SETTORIALI + SPECIALI
+// ------------------------------------------------------------
+// G1/G2/G3 → verde solo nel settore richiesto (solo matrici)
+// GF/GS/GT → esattamente come YF/YS/YT ma in verde
+//   GF → settori 1 + 2
+//   GS → settori 2 + 3
+//   GT → settori 3 + 1
+
+#define CMD_GREEN_S1       "G1"
+#define CMD_GREEN_S2       "G2"
+#define CMD_GREEN_S3       "G3"
+#define CMD_GREEN_FS       "GF"   // S1 + S2
+#define CMD_GREEN_ST       "GS"   // S2 + S3
+#define CMD_GREEN_TF       "GT"   // S3 + S1
 
 
 // ------------------------------------------------------------
@@ -27,7 +44,7 @@
 #define CMD_YELLOW_S3      "Y3"
 #define CMD_YELLOW_FS      "YF"   // S1 + S2
 #define CMD_YELLOW_ST      "YS"   // S2 + S3
-#define CMD_YELLOW_TF      "YT"   // S3 + S1 (H = “Hybrid” per non usare 3 di nuovo)
+#define CMD_YELLOW_TF      "YT"   // S3 + S1
 
 
 // ------------------------------------------------------------
@@ -36,7 +53,7 @@
 #define CMD_BLUE_S1        "B1"
 #define CMD_BLUE_S2        "B2"
 #define CMD_BLUE_S3        "B3"
-#define CMD_BLUE_PIT       "BP"   // Blue PIT
+#define CMD_BLUE_PIT       "BP"
 
 
 // ------------------------------------------------------------
@@ -63,11 +80,12 @@
 #define CMD_FORMATION_LAP  "FL"
 #define CMD_PRE_RACE       "PR"
 
-// Countdown pre-gara (mapping dei legacy)
-#define CMD_PRE_10         "P0"   // PRE10_CMD  '7'
-#define CMD_PRE_5          "P5"   // PRE5_CMD   '8'
-#define CMD_PRE_2          "P2"   // PRE2_CMD   '9'
-#define CMD_PRE_1          "P1"   // PRE1_CMD   '0'
+
+// Countdown pre-gara (mapping legacy)
+#define CMD_PRE_10         "P0"
+#define CMD_PRE_5          "P5"
+#define CMD_PRE_2          "P2"
+#define CMD_PRE_1          "P1"
 
 
 // ------------------------------------------------------------
@@ -85,10 +103,16 @@
 // ------------------------------------------------------------
 #define CMD_CLEAR_ALL      "CL"
 #define CMD_CLEAR_YELLOW   "CY"
+#define CMD_CLEAR_BLUE     "CB"
+#define CMD_CLEAR_BLUE_S1   "1B"
+#define CMD_CLEAR_BLUE_S2   "2B"
+#define CMD_CLEAR_BLUE_S3   "3B"
+
+
+
 
 // ------------------------------------------------------------
 //  LEGACY COMPATIBILITY (protocollo storico 1-char)
-//  Necessario per codice esistente che usa switch(char).
 // ------------------------------------------------------------
 #define CONN_CMD           'C'
 #define DSCN_CMD           'c'

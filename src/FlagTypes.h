@@ -30,13 +30,29 @@ enum FlagType {
 
     FLAG_NONE = 0,          // Nessuna bandiera
 
-    FLAG_GREEN,             // Green flag
+    // --------------------------------------------------------
+    //  GREEN FLAGS
+    // --------------------------------------------------------
+    FLAG_GREEN,             // Green flag globale (FG)
+    FLAG_GREEN_S1,          // Green settore 1 (G1)
+    FLAG_GREEN_S2,          // Green settore 2 (G2)
+    FLAG_GREEN_S3,          // Green settore 3 (G3)
+    FLAG_GREEN_FS,          // Green settori 1 + 2 (GF)
+    FLAG_GREEN_ST,          // Green settori 2 + 3 (GS)
+    FLAG_GREEN_TF,          // Green settori 3 + 1 (GT)
+
+
+    // --------------------------------------------------------
+    //  RED / BLUE / YELLOW
+    // --------------------------------------------------------
     FLAG_RED,               // Red flag
-    FLAG_BLUE,              // Blue flag
+
+    FLAG_BLUE,              // Blue flag globale
     FLAG_BLUE_S1,           // Blue settore 1
     FLAG_BLUE_S2,           // Blue settore 2
     FLAG_BLUE_S3,           // Blue settore 3
     FLAG_BLUE_PIT,          // Blue PIT
+
     FLAG_YELLOW_S1,         // Yellow settore 1
     FLAG_YELLOW_S2,         // Yellow settore 2
     FLAG_YELLOW_S3,         // Yellow settore 3
@@ -45,9 +61,15 @@ enum FlagType {
     FLAG_YELLOW_ST,         // Settori 2 + 3
     FLAG_YELLOW_TF,         // Settori 3 + 1
 
+    // --------------------------------------------------------
+    //  SAFETY
+    // --------------------------------------------------------
     FLAG_SC,                // Safety Car
     FLAG_VSC,               // Virtual Safety Car
 
+    // --------------------------------------------------------
+    //  FINISH / CONDITIONS
+    // --------------------------------------------------------
     FLAG_CHECKERED,         // Bandiera a scacchi
     FLAG_WET                // Wet Race
 };
@@ -103,7 +125,5 @@ enum SystemCommand {
     CMD_TEST_MODE,          // Test LED
     CMD_SHOW_ID             // Mostra ID dispositivo
 };
-
-
 
 #endif

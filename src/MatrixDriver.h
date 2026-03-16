@@ -244,12 +244,49 @@ static void MatrixShowFlag(FlagType flag, bool toggle = false)
     switch(flag)
     {
 
+        // ----------------------------------------------------
+        // FIA sector green (singoli + doppi)
+        // ----------------------------------------------------
         case FLAG_GREEN:
-            fill_solid(matrixLeds,MATRIX_LEDS,FLAG_GREEN_COLOR);
+            fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
+            break;
+
+        case FLAG_GREEN_S1:
+            if (DEVICE_ID == 0)
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
+            break;
+
+        case FLAG_GREEN_S2:
+            if (DEVICE_ID == 1)
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
+            break;
+
+        case FLAG_GREEN_S3:
+            if (DEVICE_ID == 2)
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
+            break;
+
+        case FLAG_GREEN_FS:   // S1 + S2
+            if (DEVICE_ID == 0 || DEVICE_ID == 1)
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
+            break;
+
+        case FLAG_GREEN_ST:   // S2 + S3
+            if (DEVICE_ID == 1 || DEVICE_ID == 2)
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
+            break;
+
+        case FLAG_GREEN_TF:   // S3 + S1
+            if (DEVICE_ID == 2 || DEVICE_ID == 0)
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
             break;
 
         case FLAG_RED:
             fill_solid(matrixLeds,MATRIX_LEDS,FLAG_RED_COLOR);
+            break;
+
+        case FLAG_BLUE:
+            fill_solid(matrixLeds, MATRIX_LEDS, FLAG_BLUE_COLOR);
             break;
 
         case FLAG_BLUE_S1:
@@ -355,13 +392,13 @@ static void MatrixShowFlag(FlagType flag, bool toggle = false)
 
             if(toggle) {
                 // Frame A: sfondo giallo, lettera nera
-                Serial.println("VSC: Frame A");
+                //Serial.println("VSC: Frame A");
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_YELLOW_COLOR);
                 drawLetter(currentLetter, COLOR_BLACK);
             }
             else {
                 // Frame B: sfondo nero, lettera gialla
-                Serial.println("VSC: Frame B");
+                //Serial.println("VSC: Frame B");
                 fill_solid(matrixLeds, MATRIX_LEDS, COLOR_BLACK);
                 drawLetter(currentLetter, FLAG_YELLOW_COLOR);
             }

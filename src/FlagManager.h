@@ -47,6 +47,20 @@ namespace FlagManager {
     // ------------------------------------------------------------
     static void showFlag(FlagType flag) {
 
+        // --------------------------------------------------------
+        //  FILTRO VERDI SETTORIALI (G1/G2/G3/GF/GS/GT)
+        // --------------------------------------------------------
+        if (flag == FLAG_GREEN_S1 && DEVICE_ID != 0) return;
+        if (flag == FLAG_GREEN_S2 && DEVICE_ID != 1) return;
+        if (flag == FLAG_GREEN_S3 && DEVICE_ID != 2) return;
+
+        if (flag == FLAG_GREEN_FS && !(DEVICE_ID == 0 || DEVICE_ID == 1)) return;
+        if (flag == FLAG_GREEN_ST && !(DEVICE_ID == 1 || DEVICE_ID == 2)) return;
+        if (flag == FLAG_GREEN_TF && !(DEVICE_ID == 2 || DEVICE_ID == 0)) return;
+
+        // --------------------------------------------------------
+        //  SE IL FLAG È DESTINATO AL DEVICE → MOSTRALO
+        // --------------------------------------------------------
         currentFlag = flag;
         AnimationEngine::start(flag);
 
@@ -59,6 +73,7 @@ namespace FlagManager {
 
         FastLED.show();
     }
+
 
 
     // ------------------------------------------------------------
@@ -114,6 +129,9 @@ namespace FlagManager {
         String c = cmd;
         c.trim();
 
+        // ------------------------------------------------------------
+        //  LEGACY 1-char
+        // ------------------------------------------------------------
         if (c.length() == 1) {
             char ch = c[0];
 
@@ -145,15 +163,31 @@ namespace FlagManager {
         c.toUpperCase();
 
         // ------------------------------------------------------------
-        // Nuovo protocollo 2 caratteri
+        //  PROTOCOLLO MODERNO 2-CARATTERI
         // ------------------------------------------------------------
 
+
+        // Verde globale (FG)
         if (c == CMD_GREEN)          { showFlag(FLAG_GREEN); return; }
+
+        // Nuovi verdi settoriali singoli
+        if (c == CMD_GREEN_S1)       { showFlag(FLAG_GREEN_S1); return; }
+        if (c == CMD_GREEN_S2)       { showFlag(FLAG_GREEN_S2); return; }
+        if (c == CMD_GREEN_S3)       { showFlag(FLAG_GREEN_S3); return; }
+
+        // Verdi doppi (esatti analoghi di YF/YS/YT)
+        if (c == CMD_GREEN_FS)       { showFlag(FLAG_GREEN_FS); return; }  // GF → S1+S2
+        if (c == CMD_GREEN_ST)       { showFlag(FLAG_GREEN_ST); return; }  // GS → S2+S3
+        if (c == CMD_GREEN_TF)       { showFlag(FLAG_GREEN_TF); return; }  // GT → S3+1
+
+
+        // Bandiere base
         if (c == CMD_RED)            { showFlag(FLAG_RED); return; }
         if (c == CMD_BLUE)           { showFlag(FLAG_BLUE); return; }
         if (c == CMD_WET)            { showFlag(FLAG_WET); return; }
         if (c == CMD_CHECKERED)      { showFlag(FLAG_CHECKERED); return; }
 
+        // Yellow settoriali
         if (c == CMD_YELLOW_S1)      { showFlag(FLAG_YELLOW_S1); return; }
         if (c == CMD_YELLOW_S2)      { showFlag(FLAG_YELLOW_S2); return; }
         if (c == CMD_YELLOW_S3)      { showFlag(FLAG_YELLOW_S3); return; }
@@ -161,34 +195,74 @@ namespace FlagManager {
         if (c == CMD_YELLOW_ST)      { showFlag(FLAG_YELLOW_ST); return; }
         if (c == CMD_YELLOW_TF)      { showFlag(FLAG_YELLOW_TF); return; }
 
+        // Blue settoriali
         if (c == CMD_BLUE_S1)        { showFlag(FLAG_BLUE_S1); return; }
         if (c == CMD_BLUE_S2)        { showFlag(FLAG_BLUE_S2); return; }
         if (c == CMD_BLUE_S3)        { showFlag(FLAG_BLUE_S3); return; }
         if (c == CMD_BLUE_PIT)       { showFlag(FLAG_BLUE_PIT); return; }
 
+        // Safety
         if (c == CMD_SAFETY_CAR)     { showFlag(FLAG_SC); return; }
         if (c == CMD_VIRTUAL_SC)     { showFlag(FLAG_VSC); return; }
 
+        // Pit
         if (c == CMD_PIT_OPEN)       { showPit(PIT_OPEN); return; }
         if (c == CMD_PIT_CLOSE)      { showPit(PIT_CLOSE); return; }
         if (c == CMD_PIT_VALID)      { showPit(PIT_VALID); return; }
         if (c == CMD_PIT_OFF)        { showPit(PIT_OFF); return; }
 
+        // Semaforo
         if (c == CMD_LIGHTS_OUT)     { showSemaforo(SEM_LIGHTS_OUT); return; }
         if (c == CMD_START_PROC)     { showSemaforo(SEM_START_SEQUENCE); return; }
         if (c == CMD_FORMATION_LAP)  { showSemaforo(SEM_FORMATION_LAP); return; }
         if (c == CMD_PRE_RACE)       { showSemaforo(SEM_PRE_RACE); return; }
 
-        if (c == CMD_START_LIGHT_1)  { showSemaforo(SEM_START_SEQUENCE); /* custom */ return; }
-        if (c == CMD_START_LIGHT_2)  { /* idem */ return; }
-        if (c == CMD_START_LIGHT_3)  { /* idem */ return; }
-        if (c == CMD_START_LIGHT_4)  { /* idem */ return; }
-        if (c == CMD_START_LIGHT_5)  { /* idem */ return; }
+        // Start lights (mapping custom)
+        if (c == CMD_START_LIGHT_1)  { showSemaforo(SEM_START_SEQUENCE); return; }
+        if (c == CMD_START_LIGHT_2)  { return; }
+        if (c == CMD_START_LIGHT_3)  { return; }
+        if (c == CMD_START_LIGHT_4)  { return; }
+        if (c == CMD_START_LIGHT_5)  { return; }
 
+        // Clear
         if (c == CMD_CLEAR_ALL)      { clearAll(); return; }
         if (c == CMD_CLEAR_YELLOW)   { showFlag(FLAG_NONE); return; }
+        
+        // ------------------------------------------------------------
+        //  CLEAR BLUE SETTORIALE (b1/b2/b3)
+        // ------------------------------------------------------------
+        if (c == CMD_CLEAR_BLUE_S1) {
+            if (DEVICE_ID == 0 &&
+                (currentFlag == FLAG_BLUE_S1 || currentFlag == FLAG_BLUE))
+            {
+                showFlag(FLAG_NONE);
+            }
+            return;
+        }
+
+        if (c == CMD_CLEAR_BLUE_S2) {
+            if (DEVICE_ID == 1 &&
+                (currentFlag == FLAG_BLUE_S2 || currentFlag == FLAG_BLUE))
+            {
+                showFlag(FLAG_NONE);
+            }
+            return;
+        }
+
+        if (c == CMD_CLEAR_BLUE_S3) {
+            if (DEVICE_ID == 2 &&
+                (currentFlag == FLAG_BLUE_S3 || currentFlag == FLAG_BLUE))
+            {
+                showFlag(FLAG_NONE);
+            }
+            return;
+        }
 
 
+
+        // ------------------------------------------------------------
+        //  COMANDI TESTUALI (fallback)
+        // ------------------------------------------------------------
         if (c == "CLEAR") {
             clearAll();
             return;

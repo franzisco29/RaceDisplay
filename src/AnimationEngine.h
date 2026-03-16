@@ -39,21 +39,32 @@ namespace AnimationEngine {
 // ------------------------------------------------------------
 static void AnimationStart(FlagType flag) {
 
-    // GREEN FLAG → gestita qui
-    if (flag == FLAG_GREEN) {
+    // GREEN FLAG → gestita qui (globale)
+    if (flag == FLAG_GREEN ||
+        flag == FLAG_GREEN_S1 ||
+        flag == FLAG_GREEN_S2 ||
+        flag == FLAG_GREEN_S3 ||
+        flag == FLAG_GREEN_FS ||
+        flag == FLAG_GREEN_ST ||
+        flag == FLAG_GREEN_TF) {
+
         AnimationEngine::greenActive = true;
         AnimationEngine::greenStartTime = millis();
-        AnimationEngine::activeFlag = FLAG_GREEN;
+        AnimationEngine::activeFlag = flag;
 
         if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
-            MatrixShowFlag(FLAG_GREEN, false);
-        } else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
-            SemaforoShowFlag(FLAG_GREEN);
+            MatrixShowFlag(flag, false);
+        } 
+        else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+            // Solo la green globale va al semaforo
+            if (flag == FLAG_GREEN)
+                SemaforoShowFlag(FLAG_GREEN);
         }
 
         FastLED.show();
         return;
     }
+
 
     // Se arriva un'altra bandiera → interrompi green
     AnimationEngine::greenActive = false;
@@ -73,51 +84,49 @@ static void AnimationStartSem(SemaforoState state) {
 
 
 // ------------------------------------------------------------
-//  Funzione di supporto: mostra gialla SOLO se settore corretto o blue SOLO se settore corretto (per matrici)
+//  Funzioni di supporto settoriali
 // ------------------------------------------------------------
 static bool MatrixShouldShowYellow(FlagType flag) {
 
     switch(flag) {
 
-        case FLAG_YELLOW_S1:
-            return (DEVICE_ID == 0);
+        case FLAG_YELLOW_S1: return (DEVICE_ID == 0);
+        case FLAG_YELLOW_S2: return (DEVICE_ID == 1);
+        case FLAG_YELLOW_S3: return (DEVICE_ID == 2);
 
-        case FLAG_YELLOW_S2:
-            return (DEVICE_ID == 1);
+        case FLAG_YELLOW_FS: return (DEVICE_ID == 0 || DEVICE_ID == 1);
+        case FLAG_YELLOW_ST: return (DEVICE_ID == 1 || DEVICE_ID == 2);
+        case FLAG_YELLOW_TF: return (DEVICE_ID == 2 || DEVICE_ID == 0);
 
-        case FLAG_YELLOW_S3:
-            return (DEVICE_ID == 2);
-
-        case FLAG_YELLOW_FS:
-            return (DEVICE_ID == 0 || DEVICE_ID == 1);
-
-        case FLAG_YELLOW_ST:
-            return (DEVICE_ID == 1 || DEVICE_ID == 2);
-
-        case FLAG_YELLOW_TF:
-            return (DEVICE_ID == 2 || DEVICE_ID == 0);
-
-        default:
-            return false;
+        default: return false;
     }
 }
-
 
 static bool MatrixShouldShowBlue(FlagType flag) {
 
     switch(flag) {
 
-        case FLAG_BLUE_S1:
-            return (DEVICE_ID == 0);
+        case FLAG_BLUE_S1: return (DEVICE_ID == 0);
+        case FLAG_BLUE_S2: return (DEVICE_ID == 1);
+        case FLAG_BLUE_S3: return (DEVICE_ID == 2);
 
-        case FLAG_BLUE_S2:
-            return (DEVICE_ID == 1);
+        default: return false;
+    }
+}
 
-        case FLAG_BLUE_S3:
-            return (DEVICE_ID == 2);
+static bool MatrixShouldShowGreen(FlagType flag) {
 
-        default:
-            return false;
+    switch(flag) {
+
+        case FLAG_GREEN_S1: return (DEVICE_ID == 0);
+        case FLAG_GREEN_S2: return (DEVICE_ID == 1);
+        case FLAG_GREEN_S3: return (DEVICE_ID == 2);
+
+        case FLAG_GREEN_FS: return (DEVICE_ID == 0 || DEVICE_ID == 1); // S1 + S2
+        case FLAG_GREEN_ST: return (DEVICE_ID == 1 || DEVICE_ID == 2); // S2 + S3
+        case FLAG_GREEN_TF: return (DEVICE_ID == 2 || DEVICE_ID == 0); // S3 + S1
+
+        default: return false;
     }
 }
 
@@ -134,20 +143,29 @@ static void AnimationUpdate() {
     // --------------------------------------------------------
     if (AnimationEngine::greenActive) {
 
-        // Se arriva un'altra bandiera → interrompi subito
-        if (AnimationEngine::activeFlag != FLAG_GREEN) {
+        // La green temporizzata vale per TUTTI i verdi (globali, settoriali, doppi)
+        if (!(AnimationEngine::activeFlag == FLAG_GREEN     ||
+            AnimationEngine::activeFlag == FLAG_GREEN_S1  ||
+            AnimationEngine::activeFlag == FLAG_GREEN_S2  ||
+            AnimationEngine::activeFlag == FLAG_GREEN_S3  ||
+            AnimationEngine::activeFlag == FLAG_GREEN_FS  ||
+            AnimationEngine::activeFlag == FLAG_GREEN_ST  ||
+            AnimationEngine::activeFlag == FLAG_GREEN_TF))
+        {
             AnimationEngine::greenActive = false;
             return;
         }
 
-        // Dopo 3 secondi → spegni e torna a NONE
+        // Spegnimento dopo 3 secondi
         if (now - AnimationEngine::greenStartTime >= 3000) {
+
             AnimationEngine::greenActive = false;
             AnimationEngine::activeFlag = FLAG_NONE;
 
             if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
                 MatrixClear();
-            } else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+            }
+            else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
                 SemaforoShowLightsOut();
             }
 
@@ -156,6 +174,8 @@ static void AnimationUpdate() {
 
         return;
     }
+
+
 
 
     // --------------------------------------------------------
@@ -171,6 +191,9 @@ static void AnimationUpdate() {
     // --------------------------------------------------------
     switch(AnimationEngine::activeFlag) {
 
+        // ----------------------------------------------------
+        //  YELLOW SETTORIALI
+        // ----------------------------------------------------
         case FLAG_YELLOW_S1:
         case FLAG_YELLOW_S2:
         case FLAG_YELLOW_S3:
@@ -197,6 +220,31 @@ static void AnimationUpdate() {
             }
             break;
 
+
+        // ----------------------------------------------------
+        //  GREEN SETTORIALI (singoli + doppi)
+        // ----------------------------------------------------
+        case FLAG_GREEN_S1:
+        case FLAG_GREEN_S2:
+        case FLAG_GREEN_S3:
+        case FLAG_GREEN_FS:
+        case FLAG_GREEN_ST:
+        case FLAG_GREEN_TF:
+
+            if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+                if (MatrixShouldShowGreen(AnimationEngine::activeFlag)) {
+                    MatrixShowFlag(AnimationEngine::activeFlag, false);
+                } else {
+                    MatrixShowFlag(FLAG_NONE, false);
+                }
+            }
+            break;
+
+
+
+        // ----------------------------------------------------
+        //  RED
+        // ----------------------------------------------------
         case FLAG_RED:
             if (now - AnimationEngine::lastUpdate >= BLINK_RED_MS) {
                 AnimationEngine::lastUpdate = now;
@@ -208,42 +256,46 @@ static void AnimationUpdate() {
                     MatrixShowFlag(AnimationEngine::toggle ? FLAG_RED : FLAG_NONE, false);
             }
             break;
-        
+
+
+        // ----------------------------------------------------
+        //  BLUE (solo matrici)
+        // ----------------------------------------------------
         case FLAG_BLUE:
         case FLAG_BLUE_S1:
         case FLAG_BLUE_S2:
         case FLAG_BLUE_S3:
 
+            // Le bandiere blu sono ESCLUSIVE delle matrici
+            if (DEVICE_TYPE != DEVICE_TYPE_MATRIX) {
+                break;   // Non fare nulla
+            }
+
+            // Solo le matrici arrivano qui
             if (now - AnimationEngine::lastUpdate >= BLINK_BLUE_MS) {
 
                 AnimationEngine::lastUpdate = now;
                 AnimationEngine::toggle = !AnimationEngine::toggle;
 
-                if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
-                    SemaforoShowFlag(AnimationEngine::toggle ? AnimationEngine::activeFlag : FLAG_NONE);
+                // Blue globale
+                if (AnimationEngine::activeFlag == FLAG_BLUE) {
+                    MatrixShowFlag(AnimationEngine::toggle ? FLAG_BLUE : FLAG_NONE, false);
                 }
-                else if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
-
-                    // Blue globale
-                    if (AnimationEngine::activeFlag == FLAG_BLUE) {
-                        MatrixShowFlag(AnimationEngine::toggle ? FLAG_BLUE : FLAG_NONE, false);
-                    }
-                    // Blue settoriale
-                    else if (MatrixShouldShowBlue(AnimationEngine::activeFlag)) {
-                        MatrixShowFlag(AnimationEngine::toggle ? AnimationEngine::activeFlag : FLAG_NONE, false);
-                    }
-                    else {
-                        MatrixShowFlag(FLAG_NONE, false);
-                    }
+                // Blue settoriale
+                else if (MatrixShouldShowBlue(AnimationEngine::activeFlag)) {
+                    MatrixShowFlag(AnimationEngine::toggle ? AnimationEngine::activeFlag : FLAG_NONE, false);
                 }
-                else if (DEVICE_TYPE == DEVICE_TYPE_PIT) {
-                    // Nessuna logica BLUE PIT → ignoriamo
+                else {
+                    MatrixShowFlag(FLAG_NONE, false);
                 }
             }
             break;
 
 
 
+        // ----------------------------------------------------
+        //  WET
+        // ----------------------------------------------------
         case FLAG_WET:
             if (now - AnimationEngine::lastUpdate >= BLINK_WET_MS) {
                 AnimationEngine::lastUpdate = now;
@@ -256,6 +308,10 @@ static void AnimationUpdate() {
             }
             break;
 
+
+        // ----------------------------------------------------
+        //  CHECKERED
+        // ----------------------------------------------------
         case FLAG_CHECKERED:
             if (now - AnimationEngine::lastUpdate >= BLINK_CHECK_MS) {
                 AnimationEngine::lastUpdate = now;
@@ -268,6 +324,10 @@ static void AnimationUpdate() {
             }
             break;
 
+
+        // ----------------------------------------------------
+        //  SAFETY CAR
+        // ----------------------------------------------------
         case FLAG_SC:
             if (now - AnimationEngine::lastUpdate >= 500) {
                 AnimationEngine::lastUpdate = now;
@@ -283,6 +343,10 @@ static void AnimationUpdate() {
             }
             break;
 
+
+        // ----------------------------------------------------
+        //  VIRTUAL SAFETY CAR
+        // ----------------------------------------------------
         case FLAG_VSC:
             if (now - AnimationEngine::lastUpdate >= 500) {
                 AnimationEngine::lastUpdate = now;
