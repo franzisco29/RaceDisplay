@@ -73,6 +73,7 @@ static const CRGB FLAG_WET_RED         = COLOR_RED;
 static const CRGB PIT_OPEN_COLOR   = COLOR_GREEN;
 static const CRGB PIT_CLOSE_COLOR  = COLOR_RED;
 static const CRGB PIT_VALID_COLOR  = COLOR_PURPLE;
+static const CRGB PIT_OFF_COLOR    = COLOR_BLACK;
 
 
 
@@ -90,6 +91,9 @@ static const CRGB SEM_BLUE_COLOR   = COLOR_BLUE;
 static const CRGB SEM_YELLOW_COLOR = COLOR_YELLOW;
 static const CRGB SEM_WET_YELLOW   = COLOR_YELLOW;
 static const CRGB SEM_WET_RED      = COLOR_RED;
+static const CRGB SEM_NONE_COLOR   = COLOR_BLACK;   // Per sicurezza, se non viene impostato alcun colore
+
+
 
 
 

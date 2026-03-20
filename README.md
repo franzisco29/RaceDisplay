@@ -1,93 +1,124 @@
-🏁 RaceDisplay Library
-RaceDisplay è una libreria modulare per la gestione di display LED dedicati al motorsport.
-Supporta matrici 8×8, anelli PIT e un semaforo a 5 anelli, con logica completa per bandiere, procedure di gara e animazioni non bloccanti.
+# 🏁 RaceDisplay
 
-Progettata per essere scalabile, chiara, collaborativa e perfetta per progetti open‑source.
+**Sistema modulare per bandiere, semafori e pannelli LED per motorsport**
 
-⚙️ Configurazione rapida
-Prima di utilizzare la libreria, è possibile configurare il comportamento del dispositivo tramite alcune direttive:
+![Platform Arduino](https://img.shields.io/badge/platform-Arduino-blue.svg)
+![ESP32](https://img.shields.io/badge/ESP32-supported-green.svg)
+![License MIT](https://img.shields.io/badge/license-MIT-lightgrey.svg)
+![Version](https://img.shields.io/badge/version-1.2.7-blue)
 
-cpp
-#define DEVICE_ID        1     // ID del dispositivo (matrice, PIT, semaforo…)
-#define LED_PIN          6     // Pin dati LED
-#define LED_BRIGHTNESS   10    // Luminosità (0–255)
-#define ENABLE_PANELS    true  // Abilita/disabilita completamente i pannelli LED
-🔍 Dettagli
-DEVICE_ID  
-Seleziona quale modulo hardware rappresenta questo dispositivo.
-La tabella “Dispositivi supportati” mostra i valori disponibili.
+RaceDisplay è una libreria C++ modulare per microcontrollori (ESP32 / ESP8266 / AVR) progettata per creare dispositivi LED professionali per il motorsport.
 
-LED_PIN  
-Pin dati per WS2812B / SK6812.
+Gestisce matrici 8x8, anelli PIT, semafori completi e button box.
 
-LED_BRIGHTNESS  
-Imposta la luminosità globale dei LED.
+Il sistema è completamente **non bloccante**, **scalabile** e progettato per garantire animazioni fluide e protocolli di comando chiari e veloci.
 
-ENABLE_PANELS  
-Se impostato a false, il dispositivo non renderizza alcuna bandiera o animazione.
-Utile per debug, test seriali o dispositivi senza LED collegati.
+---
 
-🚦 Dispositivi supportati
-ID	Tipo	Descrizione
-0	Matrice	Lap Done – mostra numeri e bandiere (Yellow S1)
-1	Matrice	Settore 1 – mostra bandiere (Yellow S2)
-2	Matrice	Settore 2 – mostra bandiere (Yellow S3)
-3	PIT	Pit In – 2 anelli (Open/Close/Valid)
-4	PIT	Pit Out – 2 anelli (Open/Close/Valid)
-5	Semaforo	5 anelli – bandiere, start, formation lap
-🟨 Bandiere supportate
-Green
+## 🚀 Funzionalità principali
 
-Red
+* **Supporto Multi-Device:**
+  * Matrici LED 8x8 (ID 0–2)
+  * PIT In / Out (ID 3–4)
+  * Semaforo a 5 anelli (ID 5)
+  * Button Box (ID 8)
 
-Blue
+* **Protocollo Comandi Avanzato**
+  * Moderno (2 caratteri)
+  * Compatibilità legacy (1 carattere)
 
-Yellow S1 / S2 / S3
+* **Animazioni Non Bloccanti**
+  * Nessun `delay()`
+  * Loop sempre reattivo
 
-Yellow FS / ST / TF
+* **Gestione Bandiere**
+  * Green, Yellow, Blue, Red, Wet, Checkered
+  * Safety Car (SC) e VSC animati
 
-SC (S↔C)
+* **Semaforo Gara**
+  * Start automatico (random delay)
+  * Modalità manuale
+  * Pre-race + Formation lap
 
-VSC (V→S→C)
+---
 
-Checkered
+## 📁 Struttura della Libreria
 
-Wet Race
-
-🟦 Funzioni speciali
-Semaforo (ID 5)
-Starting Procedure (accensione progressiva 1→5)
-
-Lights Out
-
-Formation Lap (anelli 2 e 4)
-
-Pre‑Race (PRE10, PRE5, PRE2, PRE1)
-
-PIT (ID 3–4)
-Pit Open (verde)
-
-Pit Close (rosso)
-
-Pit Valid (viola)
-
-Pit Off
-
-🧩 Architettura della libreria
-Codice
+```
 RaceDisplay/
 │
-├── RaceDisplay.h        → Entry point della libreria
-├── FlagSettings.h       → Configurazione hardware e parametri
-├── FlagTypes.h          → Enumerazioni bandiere e stati
-├── Colors.h             → Palette colori
-├── MatrixDriver.h       → Rendering matrici 8×8
-├── RingDriver.h         → Rendering anelli PIT e semaforo
-├── AnimationEngine.h    → Motore animazioni non bloccanti
-└── FlagManager.h        → Logica bandiere e routing
-🧪 Esempio di utilizzo
-cpp
-#include "RaceDisplay.h"
+├── RaceDisplay.h
+├── FlagSettings.h
+├── FlagTypes.h
+├── Commands.h
+│
+├── AnimationEngine.h
+├── FlagManager.h
+│
+├── MatrixDriver.h
+├── RingDriver.h
+│
+├── Colors.h
+└── RacePanel.h
+```
+
+---
+
+## ⚙️ Configurazione
+
+Imposta l'ID dispositivo in `FlagSettings.h`:
+
+```cpp
+#define DEVICE_ID 0
+```
+
+| ID | Tipo | Descrizione |
+|----|------|------------|
+| 0 | MATRIX | Settore 1 |
+| 1 | MATRIX | Settore 2 |
+| 2 | MATRIX | Settore 3 |
+| 3 | PIT | Pit In |
+| 4 | PIT | Pit Out |
+| 5 | SEMAFORO | Start Lights |
+| 8 | SENDER | Button Box |
+
+---
+
+## 🛰️ Protocollo Comandi
+
+| Categoria | Comando | Descrizione |
+|----------|--------|------------|
+| Global | FG | Green |
+| Global | FR | Red |
+| Global | FB | Blue |
+| Global | FC | Checkered |
+| Settore | Y1 Y2 Y3 | Yellow |
+| Settore | G1 G2 G3 | Green |
+| Safety | SC | Safety Car |
+| Safety | VS | Virtual SC |
+| PIT | PO PC | Open / Closed |
+| Start | SA | Start Auto |
+| Start | LO | Lights Out |
+
+---
+
+## 📦 Installazione
+
+### Metodo Arduino IDE
+
+1. Scarica la release
+2. Vai su:
+
+```
+Sketch → Include Library → Add .ZIP Library
+```
+
+---
+
+## 🧪 Esempio base
+
+```cpp
+#include <RaceDisplay.h>
 
 RaceDisplay display;
 
@@ -97,42 +128,12 @@ void setup() {
 
 void loop() {
     display.update();
-
-    // Esempio: mostra bandiera verde
-    // display.handleCommand("GREEN");
+    display.handleCommand("Y1");
 }
-🛠 Comandi disponibili
-Bandiere
-Codice
-GREEN
-RED
-BLUE
-CHECK
-WET
-SC
-VSC
-YELLOW S1
-YELLOW S2
-YELLOW S3
-YELLOW FS
-YELLOW ST
-YELLOW TF
-PIT
-Codice
-PIT OPEN
-PIT CLOSE
-PIT VALID
-PIT OFF
-Semaforo
-Codice
-START
-FORMATION
-Sistema
-Codice
-CLEAR
-📄 Licenza
-MIT License (o quella che preferisci).
+```
 
-👤 Autore
-Francesco — Race Display System
-Progetto modulare, open‑source, pensato per motorsport education & development.
+---
+
+## 📄 Licenza
+
+Distribuito sotto licenza MIT.

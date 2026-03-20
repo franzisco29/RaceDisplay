@@ -98,14 +98,21 @@ enum SemaforoState {
 
     SEM_NONE = 0,
 
-    SEM_PRE_RACE,           // Tutto spento
+    SEM_PRE_RACE,           // Tutto acceso
     SEM_PRE_10,             // Pre‑race 10m
     SEM_PRE_5,              // Pre‑race 5m
     SEM_PRE_2,              // Pre‑race 2m
     SEM_PRE_1,              // Pre‑race 1m
 
-    SEM_START_SEQUENCE,     // Accensione progressiva 1→5
+    SEM_START_SEQUENCE,     // Accensione progressiva 1→5 + random delay → LO
+    SEM_START_SEQUENCE_MODE, // Accensione manuale 1→5 
     SEM_LIGHTS_OUT,         // Tutto spento (start)
+
+    SEM1,                    // Semaforo 1 (anello 1)
+    SEM2,                    // Semaforo 2 (anello 2)
+    SEM3,                    // Semaforo 3 (anello 3)
+    SEM4,                    // Semaforo 4 (anello 4)
+    SEM5,                    // Semaforo 5 (anello 5)
 
     SEM_FORMATION_LAP       // Anelli 2 e 4 accesi
 };

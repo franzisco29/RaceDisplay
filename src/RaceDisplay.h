@@ -1,31 +1,43 @@
 #ifndef RACE_DISPLAY_H
 #define RACE_DISPLAY_H
 
-//
 // ============================================================
 //  RaceDisplay.h
-//  Libreria principale del sistema RaceDisplay
-//  Strutturata per repository Git (chiara, modulare, stabile)
+//  Dispatcher principale della libreria RaceDisplay
+//  Se il device è LED → include e definisce RaceDisplay LED
+//  Se il device è Sender → include RacePanel e usa alias
 // ============================================================
-//
+
+#include "FlagSettings.h"   // contiene DEVICE_TYPE
 
 // ------------------------------------------------------------
-//  Inclusione moduli interni
+//  Caso speciale: DeviceSender → includi solo RacePanel
 // ------------------------------------------------------------
+#if DEVICE_TYPE == DEVICE_TYPE_SENDER
 
-#include "FlagSettings.h"      // Configurazione hardware e parametri
-#include "FlagTypes.h"         // Enumerazioni bandiere e stati
-#include "Colors.h"            // Definizione colori LED
-#include "MatrixDriver.h"      // Driver matrici 8x8
-#include "RingDriver.h"        // Driver anelli LED
-#include "AnimationEngine.h"   // Motore animazioni non bloccanti
-#include "FlagManager.h"       // Logica bandiere e routing per ID
+#include "RacePanel.h"
+#pragma message("RaceDisplay: DeviceSender mode (RacePanel enabled, LED system disabled)")
+
+// Alias per mantenere API identica
+typedef RacePanel RaceDisplay;
+
+#else
+
+// ------------------------------------------------------------
+//  Inclusione moduli LED (solo per MATRIX, PIT, SEMAFORO)
+// ------------------------------------------------------------
+#include "FlagTypes.h"
+#include "Colors.h"
+#include "MatrixDriver.h"
+#include "RingDriver.h"
+#include "AnimationEngine.h"
+#include "FlagManager.h"
 
 // ------------------------------------------------------------
 //  Abilitazione/disabilitazione pannelli LED
 // ------------------------------------------------------------
 #ifndef ENABLE_PANELS
-#define ENABLE_PANELS true   // true = pannelli attivi, false = disattivati
+#define ENABLE_PANELS true
 #endif
 
 #if ENABLE_PANELS
@@ -36,9 +48,8 @@
 
 
 // ------------------------------------------------------------
-//  Classe principale RaceDisplay
+//  Classe RaceDisplay (solo dispositivi LED)
 // ------------------------------------------------------------
-
 class RaceDisplay {
 
 public:
@@ -60,8 +71,6 @@ public:
 
     }
 
-
-
     // --------------------------------------------------------
     //  Loop principale (non bloccante)
     // --------------------------------------------------------
@@ -76,10 +85,8 @@ public:
         }
     #endif
 
-
-
     // --------------------------------------------------------
-    //  Gestione comandi esterni (seriale, radio, CAN, ecc.)
+    //  Gestione comandi esterni
     // --------------------------------------------------------
     void handleCommand(const String& cmd) {
         FlagManager::handleCommand(cmd);
@@ -87,4 +94,6 @@ public:
 
 };
 
-#endif
+#endif // DEVICE_TYPE != DEVICE_TYPE_SENDER
+
+#endif // RACE_DISPLAY_H

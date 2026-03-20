@@ -1,39 +1,54 @@
 #ifndef RING_DRIVER_H
 #define RING_DRIVER_H
 
-//
-// ============================================================
-//  RingDriver.h
-//  Driver per anelli LED (PIT: 2 anelli, Semaforo: 5 anelli)
-//  Strutturato per repository Git (chiaro, modulare, stabile)
-// ============================================================
-//
-//  Questo file gestisce:
-//   - Inizializzazione anelli LED
-//   - Rendering PIT (open/close/valid/off)
-//   - Rendering semaforo (5 anelli)
-//   - Rendering bandiere su semaforo
-//   - Animazioni SC/VSC/Yellow/Checkered/Wet
-//   - Nessuna logica di routing (gestita da FlagManager)
-//
-// ============================================================
-//
-
 #include <FastLED.h>
 #include "FlagSettings.h"
 #include "FlagTypes.h"
 #include "Colors.h"
 
+// ------------------------------------------------------------
+//  Parametri anelli
+// ------------------------------------------------------------
+
+// PIT: 2 anelli
+#define PIT_TOTAL_LEDS      (PIT_RINGS * RING_LEDS)
+
+// Semaforo: 5 anelli
+#define SEMAFORO_TOTAL_LEDS (SEMAFORO_RINGS * RING_LEDS)
+
+// Buffer unico: allochiamo per il caso peggiore (semaforo)
+static CRGB ringLeds[SEMAFORO_TOTAL_LEDS];
 
 
 // ------------------------------------------------------------
-//  Buffer LED per anelli
+//  Helpers per lavorare a livello di anello
 // ------------------------------------------------------------
+#ifndef REVERSE_ORDER
+    static void SetRingColor(uint8_t ringIndex, const CRGB &color) {
+        // ringIndex: 0-based (0..PIT_RINGS-1 o 0..SEMAFORO_RINGS-1)
+        uint16_t start = ringIndex * RING_LEDS;
+        for (uint8_t i = 0; i < RING_LEDS; i++) {
+            ringLeds[start + i] = color;
+        }
+    }
+#else
+    #pragma message "REVERSE_ORDER is defined: ring colors will be set in reverse order"
 
-// Always allocate for the largest ring device so this header compiles
-// cleanly for all DEVICE_TYPE values.
-static CRGB ringLeds[SEMAFORO_RINGS];
+    static void SetRingColor(uint8_t ringIndex, const CRGB &color) {
+        // ringIndex: 0-based (0..PIT_RINGS-1 o 0..SEMAFORO_RINGS-1)
+        uint16_t start = ringIndex * RING_LEDS;
+        for (uint8_t i = RING_LEDS; i > 0; i--) {
+            ringLeds[start + i - 1] = color;
+        }
+    }
+#endif
 
+
+
+static void ClearAll(uint16_t count) {
+    for (uint16_t i = 0; i < count; i++)
+        ringLeds[i] = COLOR_BLACK;
+}
 
 
 // ------------------------------------------------------------
@@ -41,15 +56,14 @@ static CRGB ringLeds[SEMAFORO_RINGS];
 // ------------------------------------------------------------
 
 static void PitRingSetup() {
-    FastLED.addLeds<NEOPIXEL, LED_PIN>(ringLeds, PIT_RINGS);
+    FastLED.addLeds<NEOPIXEL, LED_PIN>(ringLeds, PIT_TOTAL_LEDS);
     FastLED.clear(true);
 }
 
 static void SemaforoRingSetup() {
-    FastLED.addLeds<NEOPIXEL, LED_PIN>(ringLeds, SEMAFORO_RINGS);
+    FastLED.addLeds<NEOPIXEL, LED_PIN>(ringLeds, SEMAFORO_TOTAL_LEDS);
     FastLED.clear(true);
 }
-
 
 
 // ------------------------------------------------------------
@@ -58,70 +72,97 @@ static void SemaforoRingSetup() {
 
 static void RingClear() {
     #if DEVICE_TYPE == DEVICE_TYPE_PIT
-        for (int i = 0; i < PIT_RINGS; i++)
-            ringLeds[i] = COLOR_BLACK;
+        ClearAll(PIT_TOTAL_LEDS);
     #elif DEVICE_TYPE == DEVICE_TYPE_SEMAFORO
-        for (int i = 0; i < SEMAFORO_RINGS; i++)
-            ringLeds[i] = COLOR_BLACK;
+        ClearAll(SEMAFORO_TOTAL_LEDS);
     #endif
 }
-
 
 
 // ------------------------------------------------------------
 //  Rendering PIT (ID 3–4)
 // ------------------------------------------------------------
 //
-//  Anello 1 = Open (verde)
-//  Anello 2 = Close (rosso)
-//  Entrambi = Valid (viola)
+//  Anello 1 = Open (verde)  → ringIndex 0
+//  Anello 2 = Close (rosso) → ringIndex 1
 //
 
 static void PitShow(PitState state) {
 
-    if (DEVICE_TYPE != DEVICE_TYPE_PIT)
+    if (DEVICE_TYPE == DEVICE_TYPE_MATRIX)
         return;
 
     RingClear();
 
-    switch(state) {
+    if(DEVICE_TYPE == DEVICE_TYPE_PIT) {
 
-        case PIT_OPEN:
-            ringLeds[0] = PIT_OPEN_COLOR;
-            break;
+        switch(state) {
 
-        case PIT_CLOSE:
-            ringLeds[1] = PIT_CLOSE_COLOR;
-            break;
+            case PIT_OPEN:
+                SetRingColor(0, PIT_OPEN_COLOR);
+                break;
 
-        case PIT_VALID:
-            ringLeds[0] = PIT_VALID_COLOR;
-            ringLeds[1] = PIT_VALID_COLOR;
-            break;
+            case PIT_CLOSE:
+                SetRingColor(1, PIT_CLOSE_COLOR);
+                break;
 
-        case PIT_OFF:
-        default:
-            break;
+            case PIT_VALID:
+                SetRingColor(0, PIT_VALID_COLOR);
+                SetRingColor(1, PIT_VALID_COLOR);
+                break;
+
+            case PIT_OFF:
+                SetRingColor(0, PIT_OFF_COLOR);
+                SetRingColor(1, PIT_OFF_COLOR);
+                 break;
+            default:
+                break;
+        }
     }
+
+    if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+        // Per sicurezza: il PIT sul semaforo è sempre anello 2 rosso
+        switch(state) {
+
+            case PIT_OPEN:
+                SetRingColor(1, PIT_OPEN_COLOR);
+                break;
+
+            case PIT_CLOSE:
+                SetRingColor(1, PIT_CLOSE_COLOR);
+                break;
+
+            case PIT_VALID:
+                SetRingColor(1, PIT_VALID_COLOR);
+                break;
+
+            case PIT_OFF:
+                SetRingColor(1, PIT_OFF_COLOR);
+            default:
+                break;
+        }
+    }    
 
     FastLED.show();
 }
-
 
 
 // ------------------------------------------------------------
 //  Rendering Semaforo (ID 5)
 // ------------------------------------------------------------
 //
-//  Anelli:
-//    1 = Settore 1
-//    2 = PIT
-//    3 = Settore 2
-//    4 = Wet Race
-//    5 = Settore 3
+//  Anelli logici (0-based):
+//    0 = Settore 1
+//    1 = PIT
+//    2 = Settore 2
+//    3 = Wet Race
+//    4 = Settore 3
 //
 
-static void SemaforoShowFlag(FlagType flag) {
+static void SemaforoShowFlag(FlagType flag, bool toggle = false) {
+
+     if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
+        return;
 
     if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
         return;
@@ -130,96 +171,80 @@ static void SemaforoShowFlag(FlagType flag) {
 
     switch(flag) {
 
-        // ----------------------------------------------------
-        //  Green flag → tutti accesi fissi
-        // ----------------------------------------------------
+        // Green → tutti accesi
         case FLAG_GREEN:
             for (int i = 0; i < SEMAFORO_RINGS; i++)
-                ringLeds[i] = SEM_GREEN_COLOR;
+                SetRingColor(i, SEM_GREEN_COLOR);
             break;
 
-
-        // ----------------------------------------------------
-        //  Red flag → tutti lampeggianti (gestito da AnimationEngine)
-        // ----------------------------------------------------
+        // Red → tutti (animazione altrove)
         case FLAG_RED:
             for (int i = 0; i < SEMAFORO_RINGS; i++)
-                ringLeds[i] = SEM_RED_COLOR;
+                SetRingColor(i, SEM_RED_COLOR);
             break;
 
-
-        // ----------------------------------------------------
-        //  Blue flag → solo settore attivo lampeggiante (gestito da AnimationEngine)
-        // ----------------------------------------------------
+        // Blue settoriale
         case FLAG_BLUE_S1:
-            ringLeds[0] = SEM_BLUE_COLOR;
+            SetRingColor(0, SEM_BLUE_COLOR);
             break;
-
         case FLAG_BLUE_S2:
-            ringLeds[2] = SEM_BLUE_COLOR;
+            SetRingColor(2, SEM_BLUE_COLOR);
             break;
-
         case FLAG_BLUE_S3:
-            ringLeds[4] = SEM_BLUE_COLOR;
-            break;
+            SetRingColor(4, SEM_BLUE_COLOR);
+            break;  //DA AGGIUNGERE DELETE BLUE
 
-
-        // ----------------------------------------------------
-        //  Yellow settori (1,3,5)
-        // ----------------------------------------------------
+        // Yellow settori
         case FLAG_YELLOW_S1:
-            ringLeds[0] = SEM_YELLOW_COLOR;
+            SetRingColor(0, SEM_YELLOW_COLOR);
             break;
-
         case FLAG_YELLOW_S2:
-            ringLeds[2] = SEM_YELLOW_COLOR;
+            SetRingColor(2, SEM_YELLOW_COLOR);
             break;
-
         case FLAG_YELLOW_S3:
-            ringLeds[4] = SEM_YELLOW_COLOR;
+            SetRingColor(4, SEM_YELLOW_COLOR);
             break;
 
         case FLAG_YELLOW_FS:
-            ringLeds[0] = SEM_YELLOW_COLOR;
-            ringLeds[2] = SEM_YELLOW_COLOR;
+            SetRingColor(0, SEM_YELLOW_COLOR);
+            SetRingColor(2, SEM_YELLOW_COLOR);
             break;
 
         case FLAG_YELLOW_ST:
-            ringLeds[2] = SEM_YELLOW_COLOR;
-            ringLeds[4] = SEM_YELLOW_COLOR;
+            SetRingColor(2, SEM_YELLOW_COLOR);
+            SetRingColor(4, SEM_YELLOW_COLOR);
             break;
 
         case FLAG_YELLOW_TF:
-            ringLeds[4] = SEM_YELLOW_COLOR;
-            ringLeds[0] = SEM_YELLOW_COLOR;
+            SetRingColor(4, SEM_YELLOW_COLOR);
+            SetRingColor(0, SEM_YELLOW_COLOR);
             break;
 
-
-        // ----------------------------------------------------
-        //  Checkered → dispari ↔ pari (animazione)
-        // ----------------------------------------------------
+        // Checkered → dispari/pari a livello di anello
         case FLAG_CHECKERED:
-            for (int i = 0; i < SEMAFORO_RINGS; i++)
-                ringLeds[i] = (i % 2 == 0) ? FLAG_CHECKER_WHITE : FLAG_CHECKER_BLACK;
+            if (!toggle){
+                for (int i = 0; i < SEMAFORO_RINGS; i++)
+                    SetRingColor(i, (i % 2 == 0) ? FLAG_CHECKER_WHITE : FLAG_CHECKER_BLACK);
+            }else {
+                for (int i = 0; i < SEMAFORO_RINGS; i++)
+                    SetRingColor(i, (i % 2 == 0) ? FLAG_CHECKER_BLACK : FLAG_CHECKER_WHITE);
+            }
+            
             break;
 
-
-        // ----------------------------------------------------
-        //  Wet Race → solo anello 4
-        // ----------------------------------------------------
+        // Wet → solo anello 3 (index 3)
         case FLAG_WET:
-            ringLeds[3] = SEM_WET_YELLOW;
+            if(toggle){
+                SetRingColor(3, SEM_WET_RED);
+            }else { 
+            }
+            SetRingColor(3, SEM_WET_YELLOW);
             break;
 
-
-        // ----------------------------------------------------
-        //  SC / VSC → animazioni gestite da AnimationEngine
-        // ----------------------------------------------------
+        // SC / VSC → animazioni altrove
         case FLAG_SC:
         case FLAG_VSC:
-            // L’animazione viene gestita altrove
             break;
-
 
         default:
             break;
@@ -230,21 +255,99 @@ static void SemaforoShowFlag(FlagType flag) {
 
 
 
+// ------
+
+
+static void SemaforoShowStartSequence(SemaforoState semState) {
+        if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
+            return;
+    
+    
+        switch(semState) {
+    
+                case SEM_START_SEQUENCE:
+                    RingClear();
+                    break;
+                case SEM_START_SEQUENCE_MODE:
+                    RingClear();
+                    break;
+                case SEM1:
+                    SetRingColor(0, SEM_RED_COLOR);
+                    break;
+                case SEM2:
+                    SetRingColor(1, SEM_RED_COLOR);
+                    break;
+                case SEM3:
+                    SetRingColor(2, SEM_RED_COLOR); 
+                    break;
+                case SEM4:
+                    SetRingColor(3, SEM_RED_COLOR);
+                    break;
+                case SEM5:
+                    SetRingColor(4, SEM_RED_COLOR);
+                    break;
+                default:
+                    break;
+        }
+    FastLED.show();
+}
+
+
+static void SemaforoPreRaceProcedure(SemaforoState semState) {
+    if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
+        return;
+    switch (semState)
+    {
+        case SEM_PRE_RACE:
+                for (int i = 0; i < SEMAFORO_RINGS; i++)
+                    SetRingColor(i, SEM_RED_COLOR);
+                break;
+        case SEM_PRE_10:
+                Serial.println("Pre10");
+                SetRingColor(4, SEM_NONE_COLOR);
+                break;
+        case SEM_PRE_5:
+                Serial.println("Pre5");
+                SetRingColor(3, SEM_NONE_COLOR);
+                break;
+        case SEM_PRE_2:
+                Serial.println("Pre2");            
+                SetRingColor(2, SEM_NONE_COLOR);
+                break;
+        case SEM_PRE_1:
+                Serial.println("Pre1");
+                SetRingColor(1, SEM_NONE_COLOR);
+                break;
+        case SEM_FORMATION_LAP:
+            RingClear();
+            SetRingColor(1, SEM_RED_COLOR);
+            SetRingColor(3, SEM_RED_COLOR);
+            break;
+        default:
+            break;
+    }
+
+    
+    FastLED.show(); 
+}
+
+
+
+static void SemaforoShowStartAutoSequence(int ring_on) {
+    SetRingColor(ring_on, SEM_RED_COLOR);
+    FastLED.show();
+}
+
 // ------------------------------------------------------------
 //  Funzioni speciali semaforo
 // ------------------------------------------------------------
-
-static void SemaforoShowFormationLap() {
-    RingClear();
-    ringLeds[1] = SEM_GREEN_COLOR;   // Anello 2
-    ringLeds[3] = SEM_GREEN_COLOR;   // Anello 4
-    FastLED.show();
-}
 
 static void SemaforoShowLightsOut() {
     RingClear();
     FastLED.show();
 }
+
+
 
 
 

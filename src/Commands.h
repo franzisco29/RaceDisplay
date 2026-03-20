@@ -73,10 +73,15 @@
 
 
 // ------------------------------------------------------------
-//  SEMAFORO
+//  SEMAFORO - START SEQUENCE
 // ------------------------------------------------------------
-#define CMD_LIGHTS_OUT     "LO"
-#define CMD_START_PROC     "SP"
+#define CMD_LIGHTS_OUT     "LO"   // Spegne le luci
+#define CMD_START_PROC     "SP"   // Solo per semaforo: avvia la sequenza di partenza (accensione S1..S5 ogni 1 secondo, senza random delay iniziale)
+#define CMD_START_AUTO     "SA"   // Solo per Semaforo: avvia la sequenza di partenza con animazione automatica (non serve inviare S1..S5) e va in random delay tra 0 e 3 secondi per simulare la variabilità reale del semaforo
+
+// ------------------------------------------------------------
+//  PRE-GARA
+// ------------------------------------------------------------
 #define CMD_FORMATION_LAP  "FL"
 #define CMD_PRE_RACE       "PR"
 

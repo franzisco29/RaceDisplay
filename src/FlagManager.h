@@ -81,7 +81,7 @@ namespace FlagManager {
     // ------------------------------------------------------------
     static void showPit(PitState state) {
 
-        if (DEVICE_TYPE != DEVICE_TYPE_PIT)
+        if (DEVICE_TYPE == DEVICE_TYPE_MATRIX)
             return;
 
         currentPit = state;
@@ -92,33 +92,22 @@ namespace FlagManager {
     // ------------------------------------------------------------
     //  SEMAFORO
     // ------------------------------------------------------------
+
     static void showSemaforo(SemaforoState state) {
 
         if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
             return;
 
         currentSem = state;
+
+        // L’unico responsabile delle animazioni è AnimationEngine
         AnimationEngine::startSem(state);
 
-        switch (state) {
-            case SEM_PRE_RACE:
-            case SEM_PRE_10:
-            case SEM_PRE_5:
-            case SEM_PRE_2:
-            case SEM_PRE_1:
-            case SEM_LIGHTS_OUT:
-                SemaforoShowLightsOut();
-                break;
+        
 
-            case SEM_FORMATION_LAP:
-                SemaforoShowFormationLap();
-                break;
-
-            case SEM_START_SEQUENCE:
-            default:
-                break;
-        }
+        // Nessuna chiamata diretta a SemaforoShowXXXX()
     }
+
 
 
     // ------------------------------------------------------------
@@ -213,21 +202,29 @@ namespace FlagManager {
 
         // Semaforo
         if (c == CMD_LIGHTS_OUT)     { showSemaforo(SEM_LIGHTS_OUT); return; }
-        if (c == CMD_START_PROC)     { showSemaforo(SEM_START_SEQUENCE); return; }
+        if (c == CMD_START_AUTO)     { showSemaforo(SEM_START_SEQUENCE); return; }
+        if (c == CMD_START_PROC)     { showSemaforo(SEM_START_SEQUENCE_MODE); return; }
         if (c == CMD_FORMATION_LAP)  { showSemaforo(SEM_FORMATION_LAP); return; }
+
         if (c == CMD_PRE_RACE)       { showSemaforo(SEM_PRE_RACE); return; }
 
+        if (c == CMD_PRE_10)          { showSemaforo(SEM_PRE_10); return; }
+        if (c == CMD_PRE_5)           { showSemaforo(SEM_PRE_5); return; }
+        if (c == CMD_PRE_2)           { showSemaforo(SEM_PRE_2); return; }
+        if (c == CMD_PRE_1)           { showSemaforo(SEM_PRE_1); return; }
+
         // Start lights (mapping custom)
-        if (c == CMD_START_LIGHT_1)  { showSemaforo(SEM_START_SEQUENCE); return; }
-        if (c == CMD_START_LIGHT_2)  { return; }
-        if (c == CMD_START_LIGHT_3)  { return; }
-        if (c == CMD_START_LIGHT_4)  { return; }
-        if (c == CMD_START_LIGHT_5)  { return; }
+        if (c == CMD_START_LIGHT_1)  { showSemaforo(SEM1); return; }
+        if (c == CMD_START_LIGHT_2)  { showSemaforo(SEM2); return; }
+        if (c == CMD_START_LIGHT_3)  { showSemaforo(SEM3); return; }
+        if (c == CMD_START_LIGHT_4)  { showSemaforo(SEM4); return; }
+        if (c == CMD_START_LIGHT_5)  { showSemaforo(SEM5); return; }
 
         // Clear
         if (c == CMD_CLEAR_ALL)      { clearAll(); return; }
         if (c == CMD_CLEAR_YELLOW)   { showFlag(FLAG_NONE); return; }
         
+
         // ------------------------------------------------------------
         //  CLEAR BLUE SETTORIALE (b1/b2/b3)
         // ------------------------------------------------------------

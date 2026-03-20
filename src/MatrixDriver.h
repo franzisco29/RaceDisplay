@@ -15,7 +15,6 @@
 
 // --- FIX COMPATIBILITÀ AVR / ESP / RISC-V -------------------
 #if defined(ESP32) || defined(ESP8266)
-// Su ESP32/ESP8266/ESP32-C3 PROGMEM è già gestito dal compilatore
     #ifndef PROGMEM
         #define PROGMEM
     #endif
@@ -24,11 +23,9 @@
     #endif
 
 #elif defined(ARDUINO_ARCH_AVR)
-// Su AVR serve la libreria specifica
     #include <avr/pgmspace.h>
 
 #else
-// Altre architetture (RP2040, STM32, ecc.)
     #ifndef PROGMEM
         #define PROGMEM
     #endif
@@ -37,6 +34,39 @@
     #endif
 #endif
 // -------------------------------------------------------------
+
+
+
+// ------------------------------------------------------------
+// ORIENTAMENTO MATRICE (rotazioni + mirror)
+// ------------------------------------------------------------
+
+// Rotazioni disponibili
+#ifndef MATRIX_ROT_0
+    #define MATRIX_ROT_0     0
+#endif
+#ifndef MATRIX_ROT_90
+    #define MATRIX_ROT_90    1
+#endif
+#ifndef MATRIX_ROT_180
+    #define MATRIX_ROT_180   2
+#endif
+#ifndef MATRIX_ROT_270
+    #define MATRIX_ROT_270   3
+#endif
+
+// Mirroring opzionale (default OFF)
+#ifndef MATRIX_MIRROR_X
+    #define MATRIX_MIRROR_X  0
+#endif
+#ifndef MATRIX_MIRROR_Y
+    #define MATRIX_MIRROR_Y  0
+#endif
+
+// Rotazione attuale (default 0°)
+#ifndef MATRIX_ROTATION
+    #define MATRIX_ROTATION MATRIX_ROT_0
+#endif
 
 
 
@@ -53,12 +83,48 @@ uint8_t VSCframeCount = 0;
 
 
 // ------------------------------------------------------------
-// XY mapping
+// XY mapping con rotazioni + mirror
 // ------------------------------------------------------------
 
-static inline uint16_t XY(uint8_t x, uint8_t y) {
-    return (y * MATRIX_WIDTH) + x;
+static inline uint16_t XY(uint8_t x, uint8_t y)
+{
+    uint8_t rx = x;
+    uint8_t ry = y;
+
+    // -------------------------
+    // Rotazioni
+    // -------------------------
+    #if MATRIX_ROTATION == MATRIX_ROT_0
+        // nessuna rotazione
+
+    #elif MATRIX_ROTATION == MATRIX_ROT_90
+        rx = y;
+        ry = (MATRIX_WIDTH - 1) - x;
+
+    #elif MATRIX_ROTATION == MATRIX_ROT_180
+        rx = (MATRIX_WIDTH  - 1) - x;
+        ry = (MATRIX_HEIGHT - 1) - y;
+
+    #elif MATRIX_ROTATION == MATRIX_ROT_270
+        rx = (MATRIX_HEIGHT - 1) - y;
+        ry = x;
+
+    #endif
+
+    // -------------------------
+    // Mirroring opzionale
+    // -------------------------
+    #if MATRIX_MIRROR_X == 1
+        rx = (MATRIX_WIDTH - 1) - rx;
+    #endif
+
+    #if MATRIX_MIRROR_Y == 1
+        ry = (MATRIX_HEIGHT - 1) - ry;
+    #endif
+
+    return (ry * MATRIX_WIDTH) + rx;
 }
+
 
 
 // ------------------------------------------------------------
@@ -85,6 +151,7 @@ static void MatrixClear() {
 }
 
 
+
 // ------------------------------------------------------------
 // FONT 5x7 (PROGMEM)
 // ------------------------------------------------------------
@@ -98,26 +165,22 @@ static const uint8_t LETTER_S[6] PROGMEM = {
     0b011110
 };
 
-
-
-
 static const uint8_t LETTER_C[6] PROGMEM = {
-0b011110,
-0b100001,
-0b100000,
-0b100000,
-0b100001,
-0b011110
+    0b011110,
+    0b100001,
+    0b100000,
+    0b100000,
+    0b100001,
+    0b011110
 };
 
-
 static const uint8_t LETTER_V[6] PROGMEM = {
-0b100001,
-0b100001,
-0b100001,
-0b010010,
-0b010010,
-0b001100
+    0b100001,
+    0b100001,
+    0b100001,
+    0b010010,
+    0b010010,
+    0b001100
 };
 
 
@@ -127,19 +190,19 @@ static const uint8_t LETTER_V[6] PROGMEM = {
 // ------------------------------------------------------------
 
 static const uint8_t NUMBERS[10][7] PROGMEM = {
-
-{0b01110,0b10001,0b10011,0b10101,0b11001,0b10001,0b01110}, //0
-{0b00100,0b01100,0b00100,0b00100,0b00100,0b00100,0b01110}, //1
-{0b01110,0b10001,0b00001,0b00010,0b00100,0b01000,0b11111}, //2
-{0b11110,0b00001,0b00001,0b01110,0b00001,0b00001,0b11110}, //3
-{0b00010,0b00110,0b01010,0b10010,0b11111,0b00010,0b00010}, //4
-{0b11111,0b10000,0b11110,0b00001,0b00001,0b10001,0b01110}, //5
-{0b00110,0b01000,0b10000,0b11110,0b10001,0b10001,0b01110}, //6
-{0b11111,0b00001,0b00010,0b00100,0b01000,0b01000,0b01000}, //7
-{0b01110,0b10001,0b10001,0b01110,0b10001,0b10001,0b01110}, //8
-{0b01110,0b10001,0b10001,0b01111,0b00001,0b00010,0b01100}  //9
-
+    {0b01110,0b10001,0b10011,0b10101,0b11001,0b10001,0b01110}, //0
+    {0b00100,0b01100,0b00100,0b00100,0b00100,0b00100,0b01110}, //1
+    {0b01110,0b10001,0b00001,0b00010,0b00100,0b01000,0b11111}, //2
+    {0b11110,0b00001,0b00001,0b01110,0b00001,0b00001,0b11110}, //3
+    {0b00010,0b00110,0b01010,0b10010,0b11111,0b00010,0b00010}, //4
+    {0b11111,0b10000,0b11110,0b00001,0b00001,0b10001,0b01110}, //5
+    {0b00110,0b01000,0b10000,0b11110,0b10001,0b10001,0b01110}, //6
+    {0b11111,0b00001,0b00010,0b00100,0b01000,0b01000,0b01000}, //7
+    {0b01110,0b10001,0b10001,0b01110,0b10001,0b10001,0b01110}, //8
+    {0b01110,0b10001,0b10001,0b01111,0b00001,0b00010,0b01100}  //9
 };
+
+
 
 // ------------------------------------------------------------
 //  Array Lettere
@@ -147,6 +210,8 @@ static const uint8_t NUMBERS[10][7] PROGMEM = {
 
 char SC_LETTERS[] = {'S','C'};
 char VSC_LETTERS[] = {'V','S','C'};
+
+
 
 // ------------------------------------------------------------
 // Disegna glyph 5x7
@@ -170,34 +235,21 @@ static void drawGlyph(const uint8_t* glyph, CRGB color)
 
 
 
-
 // ------------------------------------------------------------
 // Disegna lettera
 // ------------------------------------------------------------
 
 static void drawLetter(char letter, CRGB color)
 {
-
     switch(letter)
     {
-
-        case 'S':
-            drawGlyph(LETTER_S,color);
-            break;
-
-        case 'C':
-            drawGlyph(LETTER_C,color);
-            break;
-
-        case 'V':
-            drawGlyph(LETTER_V,color);
-            break;
-
-        default:
-            break;
+        case 'S': drawGlyph(LETTER_S,color); break;
+        case 'C': drawGlyph(LETTER_C,color); break;
+        case 'V': drawGlyph(LETTER_V,color); break;
+        default: break;
     }
-
 }
+
 
 
 // ------------------------------------------------------------
@@ -206,16 +258,16 @@ static void drawLetter(char letter, CRGB color)
 
 static void drawNumber(uint8_t num, CRGB color)
 {
-
     if(num>9) return;
-
     drawGlyph(NUMBERS[num],color);
-
 }
+
+
 
 // ------------------------------------------------------------
 // Avanza lettera ogni 4 frame (A-B-A-B)
 // ------------------------------------------------------------
+
 static inline void advanceLetterEvery4Frames(int& letterIndex, uint8_t lettersCount, uint8_t& frameCount)
 {
     frameCount++;
@@ -238,12 +290,10 @@ static inline void advanceLetterEvery4Frames(int& letterIndex, uint8_t lettersCo
 
 static void MatrixShowFlag(FlagType flag, bool toggle = false)
 {
-
     MatrixClear();
 
     switch(flag)
     {
-
         // ----------------------------------------------------
         // FIA sector green (singoli + doppi)
         // ----------------------------------------------------
@@ -266,17 +316,17 @@ static void MatrixShowFlag(FlagType flag, bool toggle = false)
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
             break;
 
-        case FLAG_GREEN_FS:   // S1 + S2
+        case FLAG_GREEN_FS:
             if (DEVICE_ID == 0 || DEVICE_ID == 1)
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
             break;
 
-        case FLAG_GREEN_ST:   // S2 + S3
+        case FLAG_GREEN_ST:
             if (DEVICE_ID == 1 || DEVICE_ID == 2)
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
             break;
 
-        case FLAG_GREEN_TF:   // S3 + S1
+        case FLAG_GREEN_TF:
             if (DEVICE_ID == 2 || DEVICE_ID == 0)
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
             break;
@@ -304,23 +354,17 @@ static void MatrixShowFlag(FlagType flag, bool toggle = false)
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_BLUE_COLOR);
             break;
 
-
         case FLAG_CHECKERED:
-
             for (uint8_t i = 0; i < MATRIX_LEDS; i++) {
                 uint8_t col = i % 8;
                 bool isWhite = toggle ? (col % 2 == 1) : (col % 2 == 0);
                 matrixLeds[i] = isWhite ? FLAG_CHECKER_WHITE : FLAG_CHECKER_BLACK;
             }
-                            
-
             break;
 
         case FLAG_WET:
-
             for(uint8_t i=0;i<MATRIX_LEDS;i++)
                 matrixLeds[i]=(i%2)?FLAG_WET_RED:FLAG_WET_YELLOW;
-
             break;
 
 
@@ -364,16 +408,14 @@ static void MatrixShowFlag(FlagType flag, bool toggle = false)
         // ----------------------------------------------------
 
         case FLAG_SC:
-            {
+        {
             const char currentLetter = SC_LETTERS[SCletter];
 
             if(toggle) {
-                // Frame A: sfondo giallo, lettera nera
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_YELLOW_COLOR);
                 drawLetter(currentLetter, COLOR_BLACK);
             }
             else {
-                // Frame B: sfondo nero, lettera gialla
                 fill_solid(matrixLeds, MATRIX_LEDS, COLOR_BLACK);
                 drawLetter(currentLetter, FLAG_YELLOW_COLOR);
             }
@@ -384,21 +426,17 @@ static void MatrixShowFlag(FlagType flag, bool toggle = false)
                 SCframeCount
             );
             break;
-            }
+        }
 
         case FLAG_VSC:
-            {
+        {
             const char currentLetter = VSC_LETTERS[VSCletter];
 
             if(toggle) {
-                // Frame A: sfondo giallo, lettera nera
-                //Serial.println("VSC: Frame A");
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_YELLOW_COLOR);
                 drawLetter(currentLetter, COLOR_BLACK);
             }
             else {
-                // Frame B: sfondo nero, lettera gialla
-                //Serial.println("VSC: Frame B");
                 fill_solid(matrixLeds, MATRIX_LEDS, COLOR_BLACK);
                 drawLetter(currentLetter, FLAG_YELLOW_COLOR);
             }
@@ -409,7 +447,7 @@ static void MatrixShowFlag(FlagType flag, bool toggle = false)
                 VSCframeCount
             );
             break;
-            }
+        }
 
         default:
             break;

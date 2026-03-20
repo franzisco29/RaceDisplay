@@ -74,6 +74,7 @@
 #define DEVICE_TYPE_MATRIX     0
 #define DEVICE_TYPE_PIT        1
 #define DEVICE_TYPE_SEMAFORO   2
+#define DEVICE_TYPE_SENDER     3   // NEW: buttonBox / DeviceSender
 
 #if DEVICE_ID <= 2
     #define DEVICE_TYPE DEVICE_TYPE_MATRIX
@@ -81,10 +82,21 @@
     #define DEVICE_TYPE DEVICE_TYPE_PIT
 #elif DEVICE_ID == 5
     #define DEVICE_TYPE DEVICE_TYPE_SEMAFORO
+#elif DEVICE_ID == 8
+    #define DEVICE_TYPE DEVICE_TYPE_SENDER   // NEW
 #else
     #define DEVICE_TYPE DEVICE_TYPE_MATRIX   // fallback
 #endif
 
+// ------------------------------------------------------------
+//  Dispositivi senza LED (DeviceSender)
+// ------------------------------------------------------------
+#if DEVICE_TYPE == DEVICE_TYPE_SENDER
+    #undef LED_PIN
+    #undef LED_BRIGHTNESS
+    #define LED_PIN        -1
+    #define LED_BRIGHTNESS 0
+#endif
 
 
 // ------------------------------------------------------------
@@ -113,12 +125,18 @@
 #define MATRIX_LEDS   (MATRIX_WIDTH * MATRIX_HEIGHT)
 
 // Semaforo (ID 5)
+#ifndef RING_LEDS
+#define RING_LEDS 12
+#endif
+
+#ifndef SEMAFORO_RINGS
 #define SEMAFORO_RINGS 5
+#endif
 
 // Pit (ID 3–4)
+#ifndef PIT_RINGS
 #define PIT_RINGS 2
-
-
+#endif
 
 // ------------------------------------------------------------
 //  Tempi di lampeggio (ms)

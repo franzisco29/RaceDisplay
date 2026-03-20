@@ -6,10 +6,12 @@
 #include "FlagTypes.h"
 #include "Colors.h"
 
+
+
 // Driver functions (dichiarate altrove)
 static void MatrixShowFlag(FlagType flag, bool toggle);
 static void drawLetter(char letter, CRGB color);
-static void SemaforoShowFlag(FlagType flag);
+static void SemaforoShowFlag(FlagType flag, bool toggle);
 static void SemaforoShowLightsOut();
 static void SemaforoShowFormationLap();
 
@@ -318,7 +320,7 @@ static void AnimationUpdate() {
                 AnimationEngine::toggle = !AnimationEngine::toggle;
 
                 if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
-                    SemaforoShowFlag(FLAG_CHECKERED);
+                    SemaforoShowFlag(FLAG_CHECKERED, AnimationEngine::toggle);
                 else
                     MatrixShowFlag(FLAG_CHECKERED, AnimationEngine::toggle);
             }
@@ -370,39 +372,85 @@ static void AnimationUpdate() {
     // --------------------------------------------------------
     //  Animazioni semaforo
     // --------------------------------------------------------
+
     switch(AnimationEngine::activeSemState) {
 
-        case SEM_START_SEQUENCE:
-            break;
+        //  START AUTO (SA)
+        //  Accensione automatica 1→5, poi random delay, poi LO
+        // ----------------------------------------------------
+        case SEM_START_SEQUENCE: {
 
-        case SEM_LIGHTS_OUT:
-            SemaforoShowLightsOut();
-            break;
+            static bool delayActive = false;
+            static unsigned long delayEnd = 0;
 
-        case SEM_FORMATION_LAP:
+            // 1) Accensione progressiva
+            if (!delayActive) {
 
-            if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
-                SemaforoShowFormationLap();
-            }
-            else if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
-
-                FlagType sectorYellow =
-                    (DEVICE_ID == 0) ? FLAG_YELLOW_S1 :
-                    (DEVICE_ID == 1) ? FLAG_YELLOW_S2 :
-                                       FLAG_YELLOW_S3;
-
-                if (now - AnimationEngine::lastUpdate >= BLINK_YELLOW_MS) {
+                if (now - AnimationEngine::lastUpdate >= 1000) {
                     AnimationEngine::lastUpdate = now;
-                    AnimationEngine::toggle = !AnimationEngine::toggle;
 
-                    MatrixShowFlag(AnimationEngine::toggle ? sectorYellow : FLAG_NONE, false);
+                    if (AnimationEngine::scStep < SEMAFORO_RINGS) {
+                        SemaforoShowStartAutoSequence(AnimationEngine::scStep);
+                        AnimationEngine::scStep++;
+                    }
+                    else {
+                        // Tutti accesi → avvia random delay
+                        unsigned long span = START_MAX_DELAY_MS - START_MIN_DELAY_MS;
+                        delayEnd = now + START_MIN_DELAY_MS + random(span + 1);
+                        delayActive = true;
+                    }
                 }
             }
+            else {
+                // 2) Random delay
+                if ((long)(now - delayEnd) >= 0) {
+                    // 3) Lights Out
+                    SemaforoShowLightsOut();
+                    AnimationEngine::activeSemState = SEM_NONE;
+                }
+            }
+
+            break;
+        }
+
+        // ----------------------------------------------------
+        //  START AUTO MANUALE (SP)
+        //  Accensione progressiva 1→5, senza random delay
+        // ----------------------------------------------------
+        case SEM_START_SEQUENCE_MODE:
+        case SEM1:
+        case SEM2:
+        case SEM3:
+        case SEM4:
+        case SEM5:
+            SemaforoShowStartSequence(AnimationEngine::activeSemState);
+            break;
+
+        // ----------------------------------------------------
+        //  PRE-GARA (accensione totale o parziale)
+        // ----------------------------------------------------
+
+        case SEM_PRE_RACE:
+        case SEM_PRE_10:
+        case SEM_PRE_5:
+        case SEM_PRE_2:
+        case SEM_PRE_1:
+        case SEM_FORMATION_LAP:
+            SemaforoPreRaceProcedure(AnimationEngine::activeSemState);
+            break;
+
+        // ----------------------------------------------------
+        //  LIGHTS OUT (LO)
+        // ----------------------------------------------------
+        case SEM_LIGHTS_OUT:
+            SemaforoShowLightsOut();
+            AnimationEngine::activeSemState = SEM_NONE;
             break;
 
         default:
             break;
     }
+
 }
 
 
