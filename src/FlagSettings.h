@@ -89,6 +89,29 @@
 #endif
 
 // ------------------------------------------------------------
+//  Macro utili per stampare valori nei pragma
+// ------------------------------------------------------------
+#define STRINGIFY2(x) #x
+#define STRINGIFY(x) STRINGIFY2(x)
+
+
+// ------------------------------------------------------------
+//  Diagnostica compile-time: mostra il tipo di device installato
+// ------------------------------------------------------------
+#if DEVICE_TYPE == DEVICE_TYPE_MATRIX
+    #pragma message ("[RaceDisplay] DEVICE_TYPE = MATRIX (ID " STRINGIFY(DEVICE_ID) ")")
+#elif DEVICE_TYPE == DEVICE_TYPE_PIT
+    #pragma message ("[RaceDisplay] DEVICE_TYPE = PIT (ID " STRINGIFY(DEVICE_ID) ")")
+#elif DEVICE_TYPE == DEVICE_TYPE_SEMAFORO
+    #pragma message ("[RaceDisplay] DEVICE_TYPE = SEMAFORO (ID " STRINGIFY(DEVICE_ID) ")")
+#elif DEVICE_TYPE == DEVICE_TYPE_SENDER
+    #pragma message ("[RaceDisplay] DEVICE_TYPE = SENDER (ID " STRINGIFY(DEVICE_ID) ")")
+#else
+    #pragma message ("[RaceDisplay] DEVICE_TYPE = UNKNOWN (fallback MATRIX)")
+#endif
+
+
+// ------------------------------------------------------------
 //  Dispositivi senza LED (DeviceSender)
 // ------------------------------------------------------------
 #if DEVICE_TYPE == DEVICE_TYPE_SENDER

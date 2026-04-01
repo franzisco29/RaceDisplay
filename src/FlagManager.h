@@ -174,6 +174,7 @@ namespace FlagManager {
         if (c == CMD_RED)            { showFlag(FLAG_RED); return; }
         if (c == CMD_BLUE)           { showFlag(FLAG_BLUE); return; }
         if (c == CMD_WET)            { showFlag(FLAG_WET); return; }
+        if (c == CMD_DRY)            { showFlag(FLAG_DRY); return; }
         if (c == CMD_CHECKERED)      { showFlag(FLAG_CHECKERED); return; }
 
         // Yellow settoriali

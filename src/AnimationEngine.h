@@ -23,6 +23,7 @@ namespace AnimationEngine {
 
     static unsigned long lastUpdate = 0;
     static bool toggle = false;
+    static unsigned long vscToggle = 0;
 
     static FlagType activeFlag = FLAG_NONE;
     static SemaforoState activeSemState = SEM_NONE;
@@ -304,11 +305,19 @@ static void AnimationUpdate() {
                 AnimationEngine::toggle = !AnimationEngine::toggle;
 
                 if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
-                    SemaforoShowFlag(AnimationEngine::toggle ? FLAG_WET : FLAG_NONE);
+                    SemaforoShowFlag(FLAG_WET, AnimationEngine::toggle);
                 else
                     MatrixShowFlag(AnimationEngine::toggle ? FLAG_WET : FLAG_NONE, false);
             }
             break;
+
+        case FLAG_DRY:
+            if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+                SemaforoShowFlag(FLAG_DRY, false);
+            }
+            else {
+                MatrixShowFlag(FLAG_NONE, false);
+            }
 
 
         // ----------------------------------------------------
@@ -340,7 +349,7 @@ static void AnimationUpdate() {
                     FastLED.show();
                 }
                 else {
-                    SemaforoShowFlag(FLAG_SC);
+                    SemaforoShowFlag(FLAG_SC, AnimationEngine::toggle);
                 }
             }
             break;
@@ -359,7 +368,7 @@ static void AnimationUpdate() {
                     FastLED.show();
                 }
                 else {
-                    SemaforoShowFlag(FLAG_VSC);
+                    SemaforoShowFlag(AnimationEngine::toggle ? FLAG_VSC : FLAG_NONE, false);
                 }
             }
             break;

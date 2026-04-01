@@ -449,6 +449,10 @@ static void MatrixShowFlag(FlagType flag, bool toggle = false)
             break;
         }
 
+        case FLAG_DRY:
+            fill_solid(matrixLeds, MATRIX_LEDS, COLOR_BLACK);
+            break;
+
         default:
             break;
     }

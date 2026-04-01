@@ -92,6 +92,8 @@ static const CRGB SEM_YELLOW_COLOR = COLOR_YELLOW;
 static const CRGB SEM_WET_YELLOW   = COLOR_YELLOW;
 static const CRGB SEM_WET_RED      = COLOR_RED;
 static const CRGB SEM_NONE_COLOR   = COLOR_BLACK;   // Per sicurezza, se non viene impostato alcun colore
+static const CRGB SEM_SC_COLOR     = COLOR_YELLOW;  // Safety Car (giallo fisso)
+static const CRGB SEM_VSC_COLOR    = COLOR_YELLOW;  // Virtual Safety Car
 
 
 

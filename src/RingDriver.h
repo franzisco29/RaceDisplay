@@ -23,25 +23,18 @@ static CRGB ringLeds[SEMAFORO_TOTAL_LEDS];
 // ------------------------------------------------------------
 //  Helpers per lavorare a livello di anello
 // ------------------------------------------------------------
-#ifndef REVERSE_ORDER
-    static void SetRingColor(uint8_t ringIndex, const CRGB &color) {
-        // ringIndex: 0-based (0..PIT_RINGS-1 o 0..SEMAFORO_RINGS-1)
-        uint16_t start = ringIndex * RING_LEDS;
-        for (uint8_t i = 0; i < RING_LEDS; i++) {
-            ringLeds[start + i] = color;
-        }
-    }
-#else
-    #pragma message "REVERSE_ORDER is defined: ring colors will be set in reverse order"
+static void SetRingColor(uint8_t ringIndex, const CRGB &color) {
 
-    static void SetRingColor(uint8_t ringIndex, const CRGB &color) {
-        // ringIndex: 0-based (0..PIT_RINGS-1 o 0..SEMAFORO_RINGS-1)
-        uint16_t start = ringIndex * RING_LEDS;
-        for (uint8_t i = RING_LEDS; i > 0; i--) {
-            ringLeds[start + i - 1] = color;
-        }
-    }
+#ifdef REVERSE_ORDER
+    ringIndex = (SEMAFORO_RINGS - 1) - ringIndex;
 #endif
+
+    uint16_t start = ringIndex * RING_LEDS;
+
+    for (uint8_t i = 0; i < RING_LEDS; i++) {
+        ringLeds[start + i] = color;
+    }
+}
 
 
 
@@ -79,9 +72,24 @@ static void RingClear() {
 }
 
 
+static void FlagRingClear() {
+    SetRingColor(0, COLOR_BLACK);
+    SetRingColor(2, COLOR_BLACK);
+    SetRingColor(4, COLOR_BLACK);
+}
+
+static void WetRingClear() {
+    SetRingColor(3, COLOR_BLACK);
+}
+
+static void PitRingClear() {
+    //SetRingColor(0, COLOR_BLACK);
+    SetRingColor(1, COLOR_BLACK);
+}
+
 // ------------------------------------------------------------
 //  Rendering PIT (ID 3–4)
-// ------------------------------------------------------------
+// ------------------------------------------------
 //
 //  Anello 1 = Open (verde)  → ringIndex 0
 //  Anello 2 = Close (rosso) → ringIndex 1
@@ -138,6 +146,7 @@ static void PitShow(PitState state) {
 
             case PIT_OFF:
                 SetRingColor(1, PIT_OFF_COLOR);
+                break;
             default:
                 break;
         }
@@ -161,17 +170,22 @@ static void PitShow(PitState state) {
 
 static void SemaforoShowFlag(FlagType flag, bool toggle = false) {
 
-     if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
-        return;
-
     if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
         return;
 
-    RingClear();
-
+    //RingClear(); TODO: 
+    
     switch(flag) {
 
         // Green → tutti accesi
+        case FLAG_NONE:
+                FlagRingClear();
+               
+            break;
+    
+        case FLAG_DRY:
+                WetRingClear();
+            break;
         case FLAG_GREEN:
             for (int i = 0; i < SEMAFORO_RINGS; i++)
                 SetRingColor(i, SEM_GREEN_COLOR);
@@ -236,14 +250,27 @@ static void SemaforoShowFlag(FlagType flag, bool toggle = false) {
         case FLAG_WET:
             if(toggle){
                 SetRingColor(3, SEM_WET_RED);
-            }else { 
-            }
-            SetRingColor(3, SEM_WET_YELLOW);
+            }else {
+                SetRingColor(3, SEM_WET_YELLOW);
+            }                
             break;
 
         // SC / VSC → animazioni altrove
         case FLAG_SC:
+                if(toggle) {
+                    SetRingColor(0, SEM_SC_COLOR);
+                    SetRingColor(2, SEM_NONE_COLOR);
+                    SetRingColor(4, SEM_SC_COLOR);
+                }else {
+                    SetRingColor(0, SEM_NONE_COLOR);
+                    SetRingColor(2, SEM_SC_COLOR);
+                    SetRingColor(4, SEM_NONE_COLOR);
+                }
         case FLAG_VSC:
+                SetRingColor(0, SEM_VSC_COLOR);
+                SetRingColor(2, SEM_VSC_COLOR);
+                SetRingColor(4, SEM_VSC_COLOR);
+
             break;
 
         default:

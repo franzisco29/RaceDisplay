@@ -71,7 +71,8 @@ enum FlagType {
     //  FINISH / CONDITIONS
     // --------------------------------------------------------
     FLAG_CHECKERED,         // Bandiera a scacchi
-    FLAG_WET                // Wet Race
+    FLAG_WET,                // Wet Race
+    FLAG_DRY                 // Dry
 };
 
 

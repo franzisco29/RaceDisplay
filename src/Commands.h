@@ -16,6 +16,7 @@
 #define CMD_RED            "FR"
 #define CMD_BLUE           "FB"
 #define CMD_WET            "FW"
+#define CMD_DRY            "FD"
 #define CMD_CHECKERED      "FC"
 
 
