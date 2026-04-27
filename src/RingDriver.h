@@ -173,11 +173,12 @@ static void SemaforoShowFlag(FlagType flag, bool toggle = false) {
     if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
         return;
 
-    //RingClear(); TODO: 
+
+    //RingClear()
     
     switch(flag) {
 
-        // Green → tutti accesi
+        
         case FLAG_NONE:
                 FlagRingClear();
                
@@ -186,6 +187,8 @@ static void SemaforoShowFlag(FlagType flag, bool toggle = false) {
         case FLAG_DRY:
                 WetRingClear();
             break;
+        
+        // Green → tutti accesi
         case FLAG_GREEN:
             for (int i = 0; i < SEMAFORO_RINGS; i++)
                 SetRingColor(i, SEM_GREEN_COLOR);
@@ -194,7 +197,7 @@ static void SemaforoShowFlag(FlagType flag, bool toggle = false) {
         // Red → tutti (animazione altrove)
         case FLAG_RED:
             for (int i = 0; i < SEMAFORO_RINGS; i++)
-                SetRingColor(i, SEM_RED_COLOR);
+                SetRingColor(i, toggle ? SEM_RED_COLOR : COLOR_BLACK);
             break;
 
         // Blue settoriale
@@ -257,15 +260,16 @@ static void SemaforoShowFlag(FlagType flag, bool toggle = false) {
 
         // SC / VSC → animazioni altrove
         case FLAG_SC:
-                if(toggle) {
+                if (toggle) {
                     SetRingColor(0, SEM_SC_COLOR);
-                    SetRingColor(2, SEM_NONE_COLOR);
+                    SetRingColor(2, COLOR_BLACK);
                     SetRingColor(4, SEM_SC_COLOR);
-                }else {
-                    SetRingColor(0, SEM_NONE_COLOR);
+                } else {
+                    SetRingColor(0, COLOR_BLACK);
                     SetRingColor(2, SEM_SC_COLOR);
-                    SetRingColor(4, SEM_NONE_COLOR);
+                    SetRingColor(4, COLOR_BLACK);
                 }
+            break;
         case FLAG_VSC:
                 SetRingColor(0, SEM_VSC_COLOR);
                 SetRingColor(2, SEM_VSC_COLOR);
@@ -330,19 +334,19 @@ static void SemaforoPreRaceProcedure(SemaforoState semState) {
                     SetRingColor(i, SEM_RED_COLOR);
                 break;
         case SEM_PRE_10:
-                Serial.println("Pre10");
+                //Serial.println("Pre10");
                 SetRingColor(4, SEM_NONE_COLOR);
                 break;
         case SEM_PRE_5:
-                Serial.println("Pre5");
+                //Serial.println("Pre5");
                 SetRingColor(3, SEM_NONE_COLOR);
                 break;
         case SEM_PRE_2:
-                Serial.println("Pre2");            
+                //Serial.println("Pre2");            
                 SetRingColor(2, SEM_NONE_COLOR);
                 break;
         case SEM_PRE_1:
-                Serial.println("Pre1");
+                //Serial.println("Pre1");
                 SetRingColor(1, SEM_NONE_COLOR);
                 break;
         case SEM_FORMATION_LAP:

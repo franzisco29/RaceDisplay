@@ -366,11 +366,11 @@ static void MatrixShowFlag(FlagType flag, bool toggle = false)
             for(uint8_t i=0;i<MATRIX_LEDS;i++)
                 matrixLeds[i]=(i%2)?FLAG_WET_RED:FLAG_WET_YELLOW;
             break;
+            
 
-
-        // ----------------------------------------------------
-        // FIA sector yellow
-        // ----------------------------------------------------
+            // ----------------------------------------------------
+            // FIA sector yellow
+            // ----------------------------------------------------
 
         case FLAG_YELLOW_S1:
             if(DEVICE_ID==0)

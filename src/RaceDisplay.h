@@ -76,7 +76,6 @@ public:
     // --------------------------------------------------------
     #if ENABLE_PANELS
         void update() {
-            AnimationEngine::update();
             FlagManager::update();
         }
     #else

@@ -2,7 +2,7 @@
 #define RACE_PANEL_H
 
 #include <Arduino.h>
-#include "commands.h"
+#include "Commands.h"
 #include "FlagSettings.h"
 
 // ============================================================
@@ -19,25 +19,25 @@ public:
     // --------------------------------------------------------
     //  Configurazione hardware pulsanti
     // --------------------------------------------------------
-    static constexpr uint8_t PINS[] = { 4, 5, 10, 3, 21, 7, 2, 20, 6, 9 };
+    static constexpr uint8_t PINS[] = { 2, 3, 4, 5, 6, 7, 9, 10, 20, 21 };
     static constexpr uint8_t N = sizeof(PINS);
 
     // Mappa comandi → usa commands.h
     static constexpr const char* CMDS[] = {
-        CMD_GREEN,        // FG
-        CMD_RED,          // FR
-        CMD_WET,          // FW
-        CMD_YELLOW_S1,    // Y1
-        CMD_YELLOW_S2,    // Y2
-        CMD_YELLOW_S3,    // Y3
-        CMD_SAFETY_CAR,   // SC
-        CMD_VIRTUAL_SC,   // VS
-        CMD_CLEAR_ALL,    // CL
-        CMD_START_PROC    // SP (toggle con LO)
+        CMD_SAFETY_CAR,   // SC  (PIN 2)
+        CMD_YELLOW_S1,    // Y1  (PIN 3)
+        CMD_GREEN,        // FG  (PIN 4)
+        CMD_RED,          // FR  (PIN 5)
+        CMD_CLEAR_ALL,    // CL  (PIN 6)
+        CMD_YELLOW_S3,    // Y3  (PIN 7)
+        CMD_START_PROC,   // SP  (PIN 9, toggle con LO)
+        CMD_WET,          // FW  (PIN 10)
+        CMD_VIRTUAL_SC,   // VS  (PIN 20)
+        CMD_YELLOW_S2     // Y2  (PIN 21)
     };
 
     // Toggle SP/LO
-    static constexpr uint8_t TOGGLE_IDX = 9;
+    static constexpr uint8_t TOGGLE_IDX = 6;
     static constexpr const char* TOGGLE_CMDS[2] = { CMD_START_PROC, CMD_LIGHTS_OUT };
 
     // Debounce

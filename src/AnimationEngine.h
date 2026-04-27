@@ -31,6 +31,10 @@ namespace AnimationEngine {
     static uint8_t scStep = 0;
     static uint8_t vscStep = 0;
 
+    // Stato sequenza semaforo auto (SA)
+    static bool semStartDelayActive = false;
+    static unsigned long semStartDelayEnd = 0;
+
     // GREEN FLAG temporizzata
     static bool greenActive = false;
     static unsigned long greenStartTime = 0;
@@ -83,6 +87,13 @@ static void AnimationStart(FlagType flag) {
 // ------------------------------------------------------------
 static void AnimationStartSem(SemaforoState state) {
     AnimationEngine::activeSemState = state;
+
+    // Reset robusto per consentire riavvii multipli della sequenza automatica
+    if (state == SEM_START_SEQUENCE) {
+        AnimationEngine::scStep = 0;
+        AnimationEngine::semStartDelayActive = false;
+        AnimationEngine::semStartDelayEnd = 0;
+    }
 }
 
 
@@ -254,7 +265,7 @@ static void AnimationUpdate() {
                 AnimationEngine::toggle = !AnimationEngine::toggle;
 
                 if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
-                    SemaforoShowFlag(AnimationEngine::toggle ? FLAG_RED : FLAG_NONE);
+                    SemaforoShowFlag(FLAG_RED, AnimationEngine::toggle);
                 else
                     MatrixShowFlag(AnimationEngine::toggle ? FLAG_RED : FLAG_NONE, false);
             }
@@ -318,6 +329,7 @@ static void AnimationUpdate() {
             else {
                 MatrixShowFlag(FLAG_NONE, false);
             }
+            break;
 
 
         // ----------------------------------------------------
@@ -350,6 +362,7 @@ static void AnimationUpdate() {
                 }
                 else {
                     SemaforoShowFlag(FLAG_SC, AnimationEngine::toggle);
+                    FastLED.show();
                 }
             }
             break;
@@ -388,12 +401,8 @@ static void AnimationUpdate() {
         //  Accensione automatica 1→5, poi random delay, poi LO
         // ----------------------------------------------------
         case SEM_START_SEQUENCE: {
-
-            static bool delayActive = false;
-            static unsigned long delayEnd = 0;
-
             // 1) Accensione progressiva
-            if (!delayActive) {
+            if (!AnimationEngine::semStartDelayActive) {
 
                 if (now - AnimationEngine::lastUpdate >= 1000) {
                     AnimationEngine::lastUpdate = now;
@@ -405,17 +414,18 @@ static void AnimationUpdate() {
                     else {
                         // Tutti accesi → avvia random delay
                         unsigned long span = START_MAX_DELAY_MS - START_MIN_DELAY_MS;
-                        delayEnd = now + START_MIN_DELAY_MS + random(span + 1);
-                        delayActive = true;
+                        AnimationEngine::semStartDelayEnd = now + START_MIN_DELAY_MS + random(span + 1);
+                        AnimationEngine::semStartDelayActive = true;
                     }
                 }
             }
             else {
                 // 2) Random delay
-                if ((long)(now - delayEnd) >= 0) {
+                if ((long)(now - AnimationEngine::semStartDelayEnd) >= 0) {
                     // 3) Lights Out
                     SemaforoShowLightsOut();
                     AnimationEngine::activeSemState = SEM_NONE;
+                    AnimationEngine::semStartDelayActive = false;
                 }
             }
 

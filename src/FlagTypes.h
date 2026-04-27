@@ -126,12 +126,12 @@ enum SemaforoState {
 
 enum SystemCommand {
 
-    CMD_NONE = 0,
+    SYS_CMD_NONE = 0,
 
-    CMD_CLEAR_ALL,          // Spegne tutto
-    CMD_RESET_DEVICE,       // Reset software
-    CMD_TEST_MODE,          // Test LED
-    CMD_SHOW_ID             // Mostra ID dispositivo
+    SYS_CMD_CLEAR_ALL,      // Spegne tutto
+    SYS_CMD_RESET_DEVICE,   // Reset software
+    SYS_CMD_TEST_MODE,      // Test LED
+    SYS_CMD_SHOW_ID         // Mostra ID dispositivo
 };
 
 #endif
