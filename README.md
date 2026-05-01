@@ -5,7 +5,7 @@
 ![Platform Arduino](https://img.shields.io/badge/platform-Arduino-blue.svg)
 ![ESP32](https://img.shields.io/badge/ESP32-supported-green.svg)
 ![License MIT](https://img.shields.io/badge/license-MIT-lightgrey.svg)
-![Version](https://img.shields.io/badge/version-1.2.7-blue)
+![Version](https://img.shields.io/badge/version-1.3.0-blue)
 
 RaceDisplay è una libreria C++ modulare per microcontrollori (ESP32 / ESP8266 / AVR) progettata per creare dispositivi LED professionali per il motorsport.
 
