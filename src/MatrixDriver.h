@@ -11,6 +11,7 @@
 #include "FlagSettings.h"
 #include "FlagTypes.h"
 #include "Colors.h"
+#include "DeviceRuntime.h"
 
 
 // --- FIX COMPATIBILITÀ AVR / ESP / RISC-V -------------------
@@ -36,24 +37,9 @@
 // -------------------------------------------------------------
 
 
-
 // ------------------------------------------------------------
-// ORIENTAMENTO MATRICE (rotazioni + mirror)
+// ORIENTAMENTO MATRICE
 // ------------------------------------------------------------
-
-// Rotazioni disponibili
-#ifndef MATRIX_ROT_0
-    #define MATRIX_ROT_0     0
-#endif
-#ifndef MATRIX_ROT_90
-    #define MATRIX_ROT_90    1
-#endif
-#ifndef MATRIX_ROT_180
-    #define MATRIX_ROT_180   2
-#endif
-#ifndef MATRIX_ROT_270
-    #define MATRIX_ROT_270   3
-#endif
 
 // Mirroring opzionale (default OFF)
 #ifndef MATRIX_MIRROR_X
@@ -62,12 +48,6 @@
 #ifndef MATRIX_MIRROR_Y
     #define MATRIX_MIRROR_Y  0
 #endif
-
-// Rotazione attuale (default 0°)
-#ifndef MATRIX_ROTATION
-    #define MATRIX_ROTATION MATRIX_ROT_0
-#endif
-
 
 
 // ------------------------------------------------------------
@@ -84,6 +64,9 @@ uint8_t VSCframeCount = 0;
 
 // ------------------------------------------------------------
 // XY mapping con rotazioni + mirror
+//
+// In modalità statica usa #if compile time (veloce, zero overhead)
+// In modalità runtime usa RT_ROTATION (switch runtime)
 // ------------------------------------------------------------
 
 static inline uint16_t XY(uint8_t x, uint8_t y)
@@ -91,33 +74,44 @@ static inline uint16_t XY(uint8_t x, uint8_t y)
     uint8_t rx = x;
     uint8_t ry = y;
 
-    // -------------------------
-    // Rotazioni
-    // -------------------------
+#ifndef HC_RUNTIME_CONFIG
+    // Modalità statica — risolto a compile time
     #if MATRIX_ROTATION == MATRIX_ROT_0
         // nessuna rotazione
-
     #elif MATRIX_ROTATION == MATRIX_ROT_90
         rx = y;
         ry = (MATRIX_WIDTH - 1) - x;
-
     #elif MATRIX_ROTATION == MATRIX_ROT_180
         rx = (MATRIX_WIDTH  - 1) - x;
         ry = (MATRIX_HEIGHT - 1) - y;
-
     #elif MATRIX_ROTATION == MATRIX_ROT_270
         rx = (MATRIX_HEIGHT - 1) - y;
         ry = x;
-
     #endif
+#else
+    // Modalità runtime — legge RT_ROTATION
+    switch (RT_ROTATION) {
+        case MATRIX_ROT_90:
+            rx = y;
+            ry = (MATRIX_WIDTH - 1) - x;
+            break;
+        case MATRIX_ROT_180:
+            rx = (MATRIX_WIDTH  - 1) - x;
+            ry = (MATRIX_HEIGHT - 1) - y;
+            break;
+        case MATRIX_ROT_270:
+            rx = (MATRIX_HEIGHT - 1) - y;
+            ry = x;
+            break;
+        default:
+            break;
+    }
+#endif
 
-    // -------------------------
-    // Mirroring opzionale
-    // -------------------------
+    // Mirroring opzionale (sempre compile time)
     #if MATRIX_MIRROR_X == 1
         rx = (MATRIX_WIDTH - 1) - rx;
     #endif
-
     #if MATRIX_MIRROR_Y == 1
         ry = (MATRIX_HEIGHT - 1) - ry;
     #endif
@@ -126,16 +120,15 @@ static inline uint16_t XY(uint8_t x, uint8_t y)
 }
 
 
-
 // ------------------------------------------------------------
 // Setup
+// LED_PIN rimane sempre compile time (FastLED lo richiede).
+// RT_BRIGHTNESS viene usato in runtime per setBrightness.
 // ------------------------------------------------------------
 
 static void MatrixSetup() {
-
     FastLED.addLeds<NEOPIXEL, LED_PIN>(matrixLeds, MATRIX_LEDS);
-    FastLED.setBrightness(LED_BRIGHTNESS);
-
+    FastLED.setBrightness(RT_BRIGHTNESS);
     FastLED.clear(true);
 }
 
@@ -145,11 +138,9 @@ static void MatrixSetup() {
 // ------------------------------------------------------------
 
 static void MatrixClear() {
-
-    for(uint8_t i=0;i<MATRIX_LEDS;i++)
+    for(uint8_t i = 0; i < MATRIX_LEDS; i++)
         matrixLeds[i] = COLOR_BLACK;
 }
-
 
 
 // ------------------------------------------------------------
@@ -184,7 +175,6 @@ static const uint8_t LETTER_V[6] PROGMEM = {
 };
 
 
-
 // ------------------------------------------------------------
 // Numeri 5x7
 // ------------------------------------------------------------
@@ -203,14 +193,12 @@ static const uint8_t NUMBERS[10][7] PROGMEM = {
 };
 
 
-
 // ------------------------------------------------------------
 //  Array Lettere
 // ------------------------------------------------------------
 
-char SC_LETTERS[] = {'S','C'};
+char SC_LETTERS[]  = {'S','C'};
 char VSC_LETTERS[] = {'V','S','C'};
-
 
 
 // ------------------------------------------------------------
@@ -222,17 +210,13 @@ static void drawGlyph(const uint8_t* glyph, CRGB color)
     for(uint8_t y = 0; y < 6; y++)
     {
         uint8_t row = pgm_read_byte(&glyph[y]);
-
         for(uint8_t x = 0; x < 6; x++)
         {
             if(row & (1 << (5 - x)))
-            {
                 matrixLeds[XY(x + 1, y + 1)] = color;
-            }
         }
     }
 }
-
 
 
 // ------------------------------------------------------------
@@ -243,13 +227,12 @@ static void drawLetter(char letter, CRGB color)
 {
     switch(letter)
     {
-        case 'S': drawGlyph(LETTER_S,color); break;
-        case 'C': drawGlyph(LETTER_C,color); break;
-        case 'V': drawGlyph(LETTER_V,color); break;
+        case 'S': drawGlyph(LETTER_S, color); break;
+        case 'C': drawGlyph(LETTER_C, color); break;
+        case 'V': drawGlyph(LETTER_V, color); break;
         default: break;
     }
 }
-
 
 
 // ------------------------------------------------------------
@@ -258,34 +241,30 @@ static void drawLetter(char letter, CRGB color)
 
 static void drawNumber(uint8_t num, CRGB color)
 {
-    if(num>9) return;
-    drawGlyph(NUMBERS[num],color);
+    if(num > 9) return;
+    drawGlyph(NUMBERS[num], color);
 }
 
 
-
 // ------------------------------------------------------------
-// Avanza lettera ogni 4 frame (A-B-A-B)
+// Avanza lettera ogni 4 frame
 // ------------------------------------------------------------
 
 static inline void advanceLetterEvery4Frames(int& letterIndex, uint8_t lettersCount, uint8_t& frameCount)
 {
     frameCount++;
-
     if(frameCount >= 4) {
         frameCount = 0;
         letterIndex++;
-
-        if(letterIndex >= lettersCount) {
+        if(letterIndex >= lettersCount)
             letterIndex = 0;
-        }
     }
 }
 
 
-
 // ------------------------------------------------------------
 // Rendering bandiere
+// DEVICE_ID sostituito con RT_DEVICE_ID per supporto runtime
 // ------------------------------------------------------------
 
 static void MatrixShowFlag(FlagType flag, bool toggle = false)
@@ -302,37 +281,37 @@ static void MatrixShowFlag(FlagType flag, bool toggle = false)
             break;
 
         case FLAG_GREEN_S1:
-            if (DEVICE_ID == 0)
+            if (RT_DEVICE_ID == 0)
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
             break;
 
         case FLAG_GREEN_S2:
-            if (DEVICE_ID == 1)
+            if (RT_DEVICE_ID == 1)
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
             break;
 
         case FLAG_GREEN_S3:
-            if (DEVICE_ID == 2)
+            if (RT_DEVICE_ID == 2)
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
             break;
 
         case FLAG_GREEN_FS:
-            if (DEVICE_ID == 0 || DEVICE_ID == 1)
+            if (RT_DEVICE_ID == 0 || RT_DEVICE_ID == 1)
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
             break;
 
         case FLAG_GREEN_ST:
-            if (DEVICE_ID == 1 || DEVICE_ID == 2)
+            if (RT_DEVICE_ID == 1 || RT_DEVICE_ID == 2)
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
             break;
 
         case FLAG_GREEN_TF:
-            if (DEVICE_ID == 2 || DEVICE_ID == 0)
+            if (RT_DEVICE_ID == 2 || RT_DEVICE_ID == 0)
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_GREEN_COLOR);
             break;
 
         case FLAG_RED:
-            fill_solid(matrixLeds,MATRIX_LEDS,FLAG_RED_COLOR);
+            fill_solid(matrixLeds, MATRIX_LEDS, FLAG_RED_COLOR);
             break;
 
         case FLAG_BLUE:
@@ -340,17 +319,17 @@ static void MatrixShowFlag(FlagType flag, bool toggle = false)
             break;
 
         case FLAG_BLUE_S1:
-            if (DEVICE_ID == 0)
+            if (RT_DEVICE_ID == 0)
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_BLUE_COLOR);
             break;
 
         case FLAG_BLUE_S2:
-            if (DEVICE_ID == 1)
+            if (RT_DEVICE_ID == 1)
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_BLUE_COLOR);
             break;
 
         case FLAG_BLUE_S3:
-            if (DEVICE_ID == 2)
+            if (RT_DEVICE_ID == 2)
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_BLUE_COLOR);
             break;
 
@@ -363,63 +342,56 @@ static void MatrixShowFlag(FlagType flag, bool toggle = false)
             break;
 
         case FLAG_WET:
-            for(uint8_t i=0;i<MATRIX_LEDS;i++)
-                matrixLeds[i]=(i%2)?FLAG_WET_RED:FLAG_WET_YELLOW;
+            for(uint8_t i = 0; i < MATRIX_LEDS; i++)
+                matrixLeds[i] = (i % 2) ? FLAG_WET_RED : FLAG_WET_YELLOW;
             break;
-            
 
-            // ----------------------------------------------------
-            // FIA sector yellow
-            // ----------------------------------------------------
-
+        // ----------------------------------------------------
+        // FIA sector yellow
+        // ----------------------------------------------------
         case FLAG_YELLOW_S1:
-            if(DEVICE_ID==0)
-                fill_solid(matrixLeds,MATRIX_LEDS,FLAG_YELLOW_COLOR);
+            if(RT_DEVICE_ID == 0)
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_YELLOW_COLOR);
             break;
 
         case FLAG_YELLOW_S2:
-            if(DEVICE_ID==1)
-                fill_solid(matrixLeds,MATRIX_LEDS,FLAG_YELLOW_COLOR);
+            if(RT_DEVICE_ID == 1)
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_YELLOW_COLOR);
             break;
 
         case FLAG_YELLOW_S3:
-            if(DEVICE_ID==2)
-                fill_solid(matrixLeds,MATRIX_LEDS,FLAG_YELLOW_COLOR);
+            if(RT_DEVICE_ID == 2)
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_YELLOW_COLOR);
             break;
 
         case FLAG_YELLOW_FS:
-            if(DEVICE_ID==0 || DEVICE_ID==1)
-                fill_solid(matrixLeds,MATRIX_LEDS,FLAG_YELLOW_COLOR);
+            if(RT_DEVICE_ID == 0 || RT_DEVICE_ID == 1)
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_YELLOW_COLOR);
             break;
 
         case FLAG_YELLOW_ST:
-            if(DEVICE_ID==1 || DEVICE_ID==2)
-                fill_solid(matrixLeds,MATRIX_LEDS,FLAG_YELLOW_COLOR);
+            if(RT_DEVICE_ID == 1 || RT_DEVICE_ID == 2)
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_YELLOW_COLOR);
             break;
 
         case FLAG_YELLOW_TF:
-            if(DEVICE_ID==2 || DEVICE_ID==0)
-                fill_solid(matrixLeds,MATRIX_LEDS,FLAG_YELLOW_COLOR);
+            if(RT_DEVICE_ID == 2 || RT_DEVICE_ID == 0)
+                fill_solid(matrixLeds, MATRIX_LEDS, FLAG_YELLOW_COLOR);
             break;
-
 
         // ----------------------------------------------------
         // Safety Car
         // ----------------------------------------------------
-
         case FLAG_SC:
         {
             const char currentLetter = SC_LETTERS[SCletter];
-
             if(toggle) {
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_YELLOW_COLOR);
                 drawLetter(currentLetter, COLOR_BLACK);
-            }
-            else {
+            } else {
                 fill_solid(matrixLeds, MATRIX_LEDS, COLOR_BLACK);
                 drawLetter(currentLetter, FLAG_YELLOW_COLOR);
             }
-
             advanceLetterEvery4Frames(
                 SCletter,
                 (uint8_t)(sizeof(SC_LETTERS) / sizeof(SC_LETTERS[0])),
@@ -431,16 +403,13 @@ static void MatrixShowFlag(FlagType flag, bool toggle = false)
         case FLAG_VSC:
         {
             const char currentLetter = VSC_LETTERS[VSCletter];
-
             if(toggle) {
                 fill_solid(matrixLeds, MATRIX_LEDS, FLAG_YELLOW_COLOR);
                 drawLetter(currentLetter, COLOR_BLACK);
-            }
-            else {
+            } else {
                 fill_solid(matrixLeds, MATRIX_LEDS, COLOR_BLACK);
                 drawLetter(currentLetter, FLAG_YELLOW_COLOR);
             }
-
             advanceLetterEvery4Frames(
                 VSCletter,
                 (uint8_t)(sizeof(VSC_LETTERS) / sizeof(VSC_LETTERS[0])),

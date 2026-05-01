@@ -7,6 +7,7 @@
 #define CMD_CONNECT        "CN"
 #define CMD_DISCONNECT     "DC"
 #define CMD_STATUS         "ST"
+#define CMD_CONFIG         "CF"
 
 
 // ------------------------------------------------------------

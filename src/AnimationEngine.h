@@ -5,6 +5,7 @@
 #include "FlagSettings.h"
 #include "FlagTypes.h"
 #include "Colors.h"
+#include "DeviceRuntime.h"
 
 
 
@@ -59,10 +60,10 @@ static void AnimationStart(FlagType flag) {
         AnimationEngine::greenStartTime = millis();
         AnimationEngine::activeFlag = flag;
 
-        if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+        if (RT_DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
             MatrixShowFlag(flag, false);
         } 
-        else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+        else if (RT_DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
             // Solo la green globale va al semaforo
             if (flag == FLAG_GREEN)
                 SemaforoShowFlag(FLAG_GREEN);
@@ -104,13 +105,13 @@ static bool MatrixShouldShowYellow(FlagType flag) {
 
     switch(flag) {
 
-        case FLAG_YELLOW_S1: return (DEVICE_ID == 0);
-        case FLAG_YELLOW_S2: return (DEVICE_ID == 1);
-        case FLAG_YELLOW_S3: return (DEVICE_ID == 2);
+        case FLAG_YELLOW_S1: return (RT_DEVICE_ID == 0);
+        case FLAG_YELLOW_S2: return (RT_DEVICE_ID == 1);
+        case FLAG_YELLOW_S3: return (RT_DEVICE_ID == 2);
 
-        case FLAG_YELLOW_FS: return (DEVICE_ID == 0 || DEVICE_ID == 1);
-        case FLAG_YELLOW_ST: return (DEVICE_ID == 1 || DEVICE_ID == 2);
-        case FLAG_YELLOW_TF: return (DEVICE_ID == 2 || DEVICE_ID == 0);
+        case FLAG_YELLOW_FS: return (RT_DEVICE_ID == 0 || RT_DEVICE_ID == 1);
+        case FLAG_YELLOW_ST: return (RT_DEVICE_ID == 1 || RT_DEVICE_ID == 2);
+        case FLAG_YELLOW_TF: return (RT_DEVICE_ID == 2 || RT_DEVICE_ID == 0);
 
         default: return false;
     }
@@ -120,9 +121,9 @@ static bool MatrixShouldShowBlue(FlagType flag) {
 
     switch(flag) {
 
-        case FLAG_BLUE_S1: return (DEVICE_ID == 0);
-        case FLAG_BLUE_S2: return (DEVICE_ID == 1);
-        case FLAG_BLUE_S3: return (DEVICE_ID == 2);
+        case FLAG_BLUE_S1: return (RT_DEVICE_ID == 0);
+        case FLAG_BLUE_S2: return (RT_DEVICE_ID == 1);
+        case FLAG_BLUE_S3: return (RT_DEVICE_ID == 2);
 
         default: return false;
     }
@@ -132,13 +133,13 @@ static bool MatrixShouldShowGreen(FlagType flag) {
 
     switch(flag) {
 
-        case FLAG_GREEN_S1: return (DEVICE_ID == 0);
-        case FLAG_GREEN_S2: return (DEVICE_ID == 1);
-        case FLAG_GREEN_S3: return (DEVICE_ID == 2);
+        case FLAG_GREEN_S1: return (RT_DEVICE_ID == 0);
+        case FLAG_GREEN_S2: return (RT_DEVICE_ID == 1);
+        case FLAG_GREEN_S3: return (RT_DEVICE_ID == 2);
 
-        case FLAG_GREEN_FS: return (DEVICE_ID == 0 || DEVICE_ID == 1); // S1 + S2
-        case FLAG_GREEN_ST: return (DEVICE_ID == 1 || DEVICE_ID == 2); // S2 + S3
-        case FLAG_GREEN_TF: return (DEVICE_ID == 2 || DEVICE_ID == 0); // S3 + S1
+        case FLAG_GREEN_FS: return (RT_DEVICE_ID == 0 || RT_DEVICE_ID == 1); // S1 + S2
+        case FLAG_GREEN_ST: return (RT_DEVICE_ID == 1 || RT_DEVICE_ID == 2); // S2 + S3
+        case FLAG_GREEN_TF: return (RT_DEVICE_ID == 2 || RT_DEVICE_ID == 0); // S3 + S1
 
         default: return false;
     }
@@ -176,10 +177,10 @@ static void AnimationUpdate() {
             AnimationEngine::greenActive = false;
             AnimationEngine::activeFlag = FLAG_NONE;
 
-            if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+            if (RT_DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
                 MatrixClear();
             }
-            else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+            else if (RT_DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
                 SemaforoShowLightsOut();
             }
 
@@ -220,10 +221,10 @@ static void AnimationUpdate() {
                 AnimationEngine::lastUpdate = now;
                 AnimationEngine::toggle = !AnimationEngine::toggle;
 
-                if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+                if (RT_DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
                     SemaforoShowFlag(AnimationEngine::toggle ? AnimationEngine::activeFlag : FLAG_NONE);
                 }
-                else if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+                else if (RT_DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
 
                     if (MatrixShouldShowYellow(AnimationEngine::activeFlag)) {
                         MatrixShowFlag(AnimationEngine::toggle ? AnimationEngine::activeFlag : FLAG_NONE, false);
@@ -245,7 +246,7 @@ static void AnimationUpdate() {
         case FLAG_GREEN_ST:
         case FLAG_GREEN_TF:
 
-            if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+            if (RT_DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
                 if (MatrixShouldShowGreen(AnimationEngine::activeFlag)) {
                     MatrixShowFlag(AnimationEngine::activeFlag, false);
                 } else {
@@ -264,7 +265,7 @@ static void AnimationUpdate() {
                 AnimationEngine::lastUpdate = now;
                 AnimationEngine::toggle = !AnimationEngine::toggle;
 
-                if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
+                if (RT_DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
                     SemaforoShowFlag(FLAG_RED, AnimationEngine::toggle);
                 else
                     MatrixShowFlag(AnimationEngine::toggle ? FLAG_RED : FLAG_NONE, false);
@@ -281,7 +282,7 @@ static void AnimationUpdate() {
         case FLAG_BLUE_S3:
 
             // Le bandiere blu sono ESCLUSIVE delle matrici
-            if (DEVICE_TYPE != DEVICE_TYPE_MATRIX) {
+            if (RT_DEVICE_TYPE != DEVICE_TYPE_MATRIX) {
                 break;   // Non fare nulla
             }
 
@@ -315,7 +316,7 @@ static void AnimationUpdate() {
                 AnimationEngine::lastUpdate = now;
                 AnimationEngine::toggle = !AnimationEngine::toggle;
 
-                if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
+                if (RT_DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
                     SemaforoShowFlag(FLAG_WET, AnimationEngine::toggle);
                 else
                     MatrixShowFlag(AnimationEngine::toggle ? FLAG_WET : FLAG_NONE, false);
@@ -323,7 +324,7 @@ static void AnimationUpdate() {
             break;
 
         case FLAG_DRY:
-            if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+            if (RT_DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
                 SemaforoShowFlag(FLAG_DRY, false);
             }
             else {
@@ -340,7 +341,7 @@ static void AnimationUpdate() {
                 AnimationEngine::lastUpdate = now;
                 AnimationEngine::toggle = !AnimationEngine::toggle;
 
-                if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
+                if (RT_DEVICE_TYPE == DEVICE_TYPE_SEMAFORO)
                     SemaforoShowFlag(FLAG_CHECKERED, AnimationEngine::toggle);
                 else
                     MatrixShowFlag(FLAG_CHECKERED, AnimationEngine::toggle);
@@ -356,7 +357,7 @@ static void AnimationUpdate() {
                 AnimationEngine::lastUpdate = now;
                 AnimationEngine::toggle = !AnimationEngine::toggle;
 
-                if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+                if (RT_DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
                     MatrixShowFlag(FLAG_SC, AnimationEngine::toggle);
                     FastLED.show();
                 }
@@ -376,7 +377,7 @@ static void AnimationUpdate() {
                 AnimationEngine::lastUpdate = now;
                 AnimationEngine::toggle = !AnimationEngine::toggle;
 
-                if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+                if (RT_DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
                     MatrixShowFlag(FLAG_VSC, AnimationEngine::toggle);
                     FastLED.show();
                 }

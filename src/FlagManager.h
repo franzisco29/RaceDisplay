@@ -8,6 +8,7 @@
 #include "AnimationEngine.h"
 #include "Colors.h"
 #include "Commands.h"
+#include "DeviceRuntime.h"
 
 namespace FlagManager {
 
@@ -28,13 +29,13 @@ namespace FlagManager {
         currentPit  = PIT_OFF;
         currentSem  = SEM_NONE;
 
-        if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+        if (RT_DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
             MatrixClear();
         } 
-        else if (DEVICE_TYPE == DEVICE_TYPE_PIT) {
+        else if (RT_DEVICE_TYPE == DEVICE_TYPE_PIT) {
             PitShow(PIT_OFF);
         } 
-        else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+        else if (RT_DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
             SemaforoShowLightsOut();
         }
 
@@ -50,13 +51,13 @@ namespace FlagManager {
         // --------------------------------------------------------
         //  FILTRO VERDI SETTORIALI (G1/G2/G3/GF/GS/GT)
         // --------------------------------------------------------
-        if (flag == FLAG_GREEN_S1 && DEVICE_ID != 0) return;
-        if (flag == FLAG_GREEN_S2 && DEVICE_ID != 1) return;
-        if (flag == FLAG_GREEN_S3 && DEVICE_ID != 2) return;
+        if (flag == FLAG_GREEN_S1 && RT_DEVICE_ID != 0) return;
+        if (flag == FLAG_GREEN_S2 && RT_DEVICE_ID != 1) return;
+        if (flag == FLAG_GREEN_S3 && RT_DEVICE_ID != 2) return;
 
-        if (flag == FLAG_GREEN_FS && !(DEVICE_ID == 0 || DEVICE_ID == 1)) return;
-        if (flag == FLAG_GREEN_ST && !(DEVICE_ID == 1 || DEVICE_ID == 2)) return;
-        if (flag == FLAG_GREEN_TF && !(DEVICE_ID == 2 || DEVICE_ID == 0)) return;
+        if (flag == FLAG_GREEN_FS && !(RT_DEVICE_ID == 0 || RT_DEVICE_ID == 1)) return;
+        if (flag == FLAG_GREEN_ST && !(RT_DEVICE_ID == 1 || RT_DEVICE_ID == 2)) return;
+        if (flag == FLAG_GREEN_TF && !(RT_DEVICE_ID == 2 || RT_DEVICE_ID == 0)) return;
 
         // --------------------------------------------------------
         //  SE IL FLAG È DESTINATO AL DEVICE → MOSTRALO
@@ -64,10 +65,10 @@ namespace FlagManager {
         currentFlag = flag;
         AnimationEngine::start(flag);
 
-        if (DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
+        if (RT_DEVICE_TYPE == DEVICE_TYPE_MATRIX) {
             MatrixShowFlag(flag);
         } 
-        else if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+        else if (RT_DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
             SemaforoShowFlag(flag);
         }
 
@@ -81,7 +82,7 @@ namespace FlagManager {
     // ------------------------------------------------------------
     static void showPit(PitState state) {
 
-        if (DEVICE_TYPE == DEVICE_TYPE_MATRIX)
+        if (RT_DEVICE_TYPE == DEVICE_TYPE_MATRIX)
             return;
 
         currentPit = state;
@@ -95,7 +96,7 @@ namespace FlagManager {
 
     static void showSemaforo(SemaforoState state) {
 
-        if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
+        if (RT_DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
             return;
 
         currentSem = state;
@@ -230,7 +231,7 @@ namespace FlagManager {
         //  CLEAR BLUE SETTORIALE (b1/b2/b3)
         // ------------------------------------------------------------
         if (c == CMD_CLEAR_BLUE_S1) {
-            if (DEVICE_ID == 0 &&
+            if (RT_DEVICE_ID == 0 &&
                 (currentFlag == FLAG_BLUE_S1 || currentFlag == FLAG_BLUE))
             {
                 showFlag(FLAG_NONE);
@@ -239,7 +240,7 @@ namespace FlagManager {
         }
 
         if (c == CMD_CLEAR_BLUE_S2) {
-            if (DEVICE_ID == 1 &&
+            if (RT_DEVICE_ID == 1 &&
                 (currentFlag == FLAG_BLUE_S2 || currentFlag == FLAG_BLUE))
             {
                 showFlag(FLAG_NONE);
@@ -248,7 +249,7 @@ namespace FlagManager {
         }
 
         if (c == CMD_CLEAR_BLUE_S3) {
-            if (DEVICE_ID == 2 &&
+            if (RT_DEVICE_ID == 2 &&
                 (currentFlag == FLAG_BLUE_S3 || currentFlag == FLAG_BLUE))
             {
                 showFlag(FLAG_NONE);

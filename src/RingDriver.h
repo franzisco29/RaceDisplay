@@ -5,6 +5,7 @@
 #include "FlagSettings.h"
 #include "FlagTypes.h"
 #include "Colors.h"
+#include "DeviceRuntime.h"
 
 // ------------------------------------------------------------
 //  Parametri anelli
@@ -25,8 +26,13 @@ static CRGB ringLeds[SEMAFORO_TOTAL_LEDS];
 // ------------------------------------------------------------
 static void SetRingColor(uint8_t ringIndex, const CRGB &color) {
 
-#ifdef REVERSE_ORDER
-    ringIndex = (SEMAFORO_RINGS - 1) - ringIndex;
+#ifndef HC_RUNTIME_CONFIG
+    #ifdef REVERSE_ORDER
+        ringIndex = (SEMAFORO_RINGS - 1) - ringIndex;
+    #endif
+#else
+    if (RT_REVERSE)
+        ringIndex = (SEMAFORO_RINGS - 1) - ringIndex;
 #endif
 
     uint16_t start = ringIndex * RING_LEDS;
@@ -50,11 +56,13 @@ static void ClearAll(uint16_t count) {
 
 static void PitRingSetup() {
     FastLED.addLeds<NEOPIXEL, LED_PIN>(ringLeds, PIT_TOTAL_LEDS);
+    FastLED.setBrightness(RT_BRIGHTNESS);
     FastLED.clear(true);
 }
 
 static void SemaforoRingSetup() {
     FastLED.addLeds<NEOPIXEL, LED_PIN>(ringLeds, SEMAFORO_TOTAL_LEDS);
+    FastLED.setBrightness(RT_BRIGHTNESS);
     FastLED.clear(true);
 }
 
@@ -64,11 +72,10 @@ static void SemaforoRingSetup() {
 // ------------------------------------------------------------
 
 static void RingClear() {
-    #if DEVICE_TYPE == DEVICE_TYPE_PIT
+    if (RT_DEVICE_TYPE == DEVICE_TYPE_PIT)
         ClearAll(PIT_TOTAL_LEDS);
-    #elif DEVICE_TYPE == DEVICE_TYPE_SEMAFORO
+    else
         ClearAll(SEMAFORO_TOTAL_LEDS);
-    #endif
 }
 
 
@@ -97,12 +104,12 @@ static void PitRingClear() {
 
 static void PitShow(PitState state) {
 
-    if (DEVICE_TYPE == DEVICE_TYPE_MATRIX)
+    if (RT_DEVICE_TYPE == DEVICE_TYPE_MATRIX)
         return;
 
     RingClear();
 
-    if(DEVICE_TYPE == DEVICE_TYPE_PIT) {
+    if (RT_DEVICE_TYPE == DEVICE_TYPE_PIT) {
 
         switch(state) {
 
@@ -128,7 +135,7 @@ static void PitShow(PitState state) {
         }
     }
 
-    if (DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
+    if (RT_DEVICE_TYPE == DEVICE_TYPE_SEMAFORO) {
         // Per sicurezza: il PIT sul semaforo è sempre anello 2 rosso
         switch(state) {
 
@@ -170,7 +177,7 @@ static void PitShow(PitState state) {
 
 static void SemaforoShowFlag(FlagType flag, bool toggle = false) {
 
-    if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
+    if (RT_DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
         return;
 
 
@@ -290,7 +297,7 @@ static void SemaforoShowFlag(FlagType flag, bool toggle = false) {
 
 
 static void SemaforoShowStartSequence(SemaforoState semState) {
-        if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
+        if (RT_DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
             return;
     
     
@@ -325,7 +332,7 @@ static void SemaforoShowStartSequence(SemaforoState semState) {
 
 
 static void SemaforoPreRaceProcedure(SemaforoState semState) {
-    if (DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
+    if (RT_DEVICE_TYPE != DEVICE_TYPE_SEMAFORO)
         return;
     switch (semState)
     {
