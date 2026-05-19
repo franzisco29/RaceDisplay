@@ -10,7 +10,7 @@
 //  Gestione dispositivi DeviceSender (button box)
 // ============================================================
 
-#if DEVICE_TYPE == DEVICE_TYPE_SENDER
+#if DEVICE_TYPE == DEVICE_TYPE_SENDER || defined(HC_RUNTIME_CONFIG)
 
 class RacePanel {
 
@@ -62,6 +62,7 @@ public:
             state[i] = HIGH;
             last[i]  = 0;
         }
+        
     }
 
     // --------------------------------------------------------
@@ -105,6 +106,6 @@ public:
     }
 };
 
-#endif // DEVICE_TYPE_SENDER
+#endif // DEVICE_TYPE_SENDER || HC_RUNTIME_CONFIG
 
 #endif // RACE_PANEL_H
